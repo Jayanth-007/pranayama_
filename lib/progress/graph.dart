@@ -1,0 +1,350 @@
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ProgressScreen extends StatefulWidget {
+  @override
+  _ProgressScreenState createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen> {
+  DateTime? _selectedDate;
+  // Instead of dummy data, we will load real usage data.
+  // The keys are in "YYYY-MM-DD" format and values are a map with hours and an activity.
+  Map<String, Map<String, dynamic>> usageData = {};
+
+  Map<DateTime, List<Map<String, dynamic>>> get markedDates {
+    return usageData.map((key, value) {
+      DateTime parsedDate = DateTime.parse(key);
+      return MapEntry(parsedDate, [value]);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsageData();
+  }
+
+  /// Fetch usage data from SharedPreferences.
+  /// It assumes that a list of days used is stored under "days_used" and for each day
+  /// there is a key "usage_YYYY-MM-DD" that stores the usage time in seconds.
+  Future<void> _loadUsageData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> daysUsed = prefs.getStringList('days_used') ?? [];
+    Map<String, Map<String, dynamic>> fetchedData = {};
+
+    for (var day in daysUsed) {
+      // Retrieve the usage seconds for that day.
+      int seconds = prefs.getInt("usage_$day") ?? 0;
+      // Convert seconds to hours (as a double).
+      double hours = seconds / 3600.0;
+      // Here, we assume the activity is "Pranayama" as before.
+      fetchedData[day] = {"hours": hours, "activity": "Pranayama"};
+    }
+
+    // Update state with the fetched data.
+    setState(() {
+      usageData = fetchedData;
+    });
+  }
+
+  /// Calculate the maximum continuous streak (in days) based on usageData.
+  int _calculateMaxStreak() {
+    if (usageData.isEmpty) return 0;
+    // Convert keys (date strings) into DateTime objects.
+    List<DateTime> dates = usageData.keys.map((key) => DateTime.parse(key)).toList();
+    dates.sort((a, b) => a.compareTo(b));
+
+    int maxStreak = 1;
+    int currentStreak = 1;
+
+    for (int i = 1; i < dates.length; i++) {
+      // Check if the difference between consecutive days is exactly one day.
+      if (dates[i].difference(dates[i - 1]).inDays == 1) {
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+      } else {
+        currentStreak = 1;
+      }
+    }
+
+    return maxStreak;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate total hours from the fetched usage data.
+    final totalHours = usageData.values.fold<double>(
+      0,
+          (sum, item) => sum + (item["hours"] as double),
+    );
+
+    // Convert the usageData map to a list of entries and sort by date.
+    final dataList = usageData.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: Text(""),
+        backgroundColor: Color(0xFF6C63FF),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            SizedBox(height: 20),
+            _buildStatsSection(totalHours),
+            SizedBox(height: 20),
+            _buildCalendarSection(),
+            SizedBox(height: 20),
+            if (_selectedDate != null) _buildSelectedDateInfo(),
+            SizedBox(height: 20),
+            _buildGraphSection(dataList),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 30, horizontal: 60),
+      decoration: BoxDecoration(
+        color: Color(0xFF6C63FF),
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            "Progress Screen",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 10),
+          Text(
+            "Track your yoga journey and consistency",
+            style: TextStyle(fontSize: 16, color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(double totalHours) {
+    int maxStreak = _calculateMaxStreak();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatCard("${usageData.length}", "Days Used"),
+          _buildStatCard("$maxStreak", "Max Streak"),
+          _buildStatCard("${totalHours.toStringAsFixed(1)} hrs", "Total Hours"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String value, String label) {
+    return Container(
+      width: 110,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1DB954), Color(0xFF1AA34A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          SizedBox(height: 5),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Calendar",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          TableCalendar(
+            firstDay: DateTime(2025, 1, 1),
+            lastDay: DateTime(2025, 12, 31),
+            focusedDay: _selectedDate ?? DateTime.now(),
+            selectedDayPredicate: (day) => isSameDay(day, _selectedDate),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDate = selectedDay;
+              });
+            },
+            calendarStyle: CalendarStyle(
+              selectedDecoration: BoxDecoration(
+                color: Color(0xFF1DB954),
+                shape: BoxShape.circle,
+              ),
+              todayTextStyle: TextStyle(color: Colors.white),
+              markerDecoration: BoxDecoration(
+                color: Color(0xFF1DB954),
+                shape: BoxShape.circle,
+              ),
+            ),
+            eventLoader: (date) => markedDates[date] ?? [],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedDateInfo() {
+    final selectedDateStr = _selectedDate!.toLocal().toString().split(' ')[0];
+    final data = usageData[selectedDateStr];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Data for $selectedDateStr:",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Text(
+            data != null
+                ? "${data['hours'].toStringAsFixed(1)} hours of ${data['activity']}."
+                : "No data available for this day.",
+            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGraphSection(List<MapEntry<String, Map<String, dynamic>>> dataList) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Consistency Graph",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: List.generate(
+                      dataList.length,
+                          (index) => FlSpot(
+                        index.toDouble(),
+                        dataList[index].value['hours'] as double,
+                      ),
+                    ),
+                    isCurved: true,
+                    color: Color(0xFF6C63FF),
+                    barWidth: 4,
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Color(0xFF6C63FF).withOpacity(0.3),
+                    ),
+                    dotData: FlDotData(show: true),
+                  ),
+                ],
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(fontSize: 12),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        int index = value.toInt();
+                        if (index >= 0 && index < dataList.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              dataList[index].key.split("-")[2],
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          );
+                        }
+                        return Container();
+                      },
+                    ),
+                  ),
+                ),
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        return LineTooltipItem(
+                          '${dataList[barSpot.spotIndex].key}\n${(barSpot.y).toStringAsFixed(1)} hrs',
+                          TextStyle(color: Colors.white),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension MapConversion<K, V> on Iterable<MapEntry<K, V>> {
+  Map<K, V> toMap() => {for (var e in this) e.key: e.value};
+}

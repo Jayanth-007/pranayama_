@@ -1,0 +1,57 @@
+name: meditation_app
+description: "A new Flutter project."
+
+publish_to: uild suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+
+dependencies:
+  flutter_inappwebview: ^6.1.5
+  firebase_core: ^3.11.0
+  cloud_firestore: ^5.6.3
+  firebase_auth: ^5.4.2
+  youtube_player_flutter: ^9.1.1
+  audioplayers: ^6.1.0
+  flutter:
+    sdk: flutter
+  fl_chart: ^0.70.2  # Ensure this is the latest compatible version
+  table_calendar: ^3.2.0  # Ensure this is the latest compatible version
+  shared_preferences: ^2.3.5
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.1
+  animated_text_kit: ^4.2.2
+  lottie: ^3.3.1
+cupertino_icons: ^1.0.8
+
+
+
+dev_dependencies:
+  pigeon: ^24.1.1
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^5.0.0
+
+
+flutter:
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/music/
+
+
+  fonts:
+    - family: Mulish
+      fonts:
+        - asset: assets/fonts/Mulish-Light.ttf
+        - asset: assets/fonts/Mulish-SemiBold.ttf
+
+
+
+  uses-material-design: true
+
+
