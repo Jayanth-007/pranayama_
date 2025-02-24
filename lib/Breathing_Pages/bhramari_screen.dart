@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 
 class BhramariScreen extends StatefulWidget {
   final int inhaleDuration;
-  final int holdDuration;
   final int exhaleDuration;
   final int rounds;
 
   const BhramariScreen({
     Key? key,
     required this.inhaleDuration,
-    required this.holdDuration,
     required this.exhaleDuration,
     required this.rounds,
   }) : super(key: key);
@@ -23,46 +21,35 @@ class BhramariScreen extends StatefulWidget {
 class _BhramariScreenState extends State<BhramariScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late AudioPlayer _inhalePlayer;
+  // Using just_audio's AudioPlayer.
   late AudioPlayer _exhalePlayer;
+  Timer? _exhaleTimer;
+
   bool isRunning = false;
   bool isAudioPlaying = false;
   String breathingText = "Get Ready";
   int _currentRound = 0;
   String _currentPhase = "prepare";
 
-  // Cache AudioSource to prevent repeated creation.
-  late final AssetSource _inhaleSound;
-  late final AssetSource _exhaleSound;
+  // Path to your asset (assumed to be 8 seconds long).
+  final String _exhaleAssetPath = '../assets/music/humming_sound.mp3';
 
-  // Phase boundaries.
+  // Phase boundary.
   late final double _inhaleFraction;
-  late final double _exhaleFraction; // End of exhale phase.
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize audio sources.
-    _inhaleSound = AssetSource('assets/music/inhale_bell1.mp3');
-    _exhaleSound = AssetSource('assets/music/exhale_bell1.mp3');
-
-    // Total duration = inhale + exhale + hold (in seconds)
-    final totalDuration =
-        widget.inhaleDuration + widget.exhaleDuration + widget.holdDuration;
-
-    // Calculate phase fractions.
+    // Total duration = inhale + exhale (in seconds)
+    final totalDuration = widget.inhaleDuration + widget.exhaleDuration;
     _inhaleFraction = widget.inhaleDuration / totalDuration;
-    _exhaleFraction =
-        (widget.inhaleDuration + widget.exhaleDuration) / totalDuration;
-    // The hold phase covers progress from _exhaleFraction to 1.
 
-    // Initialize separate audio players.
-    _inhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-    _exhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+    // Initialize the just_audio AudioPlayer.
+    _exhalePlayer = AudioPlayer();
 
-    // Preload audio files.
-    _preloadAudio();
+    // Set the audio source from asset.
+    _setAudioSource();
 
     _controller = AnimationController(
       duration: Duration(seconds: totalDuration),
@@ -73,14 +60,12 @@ class _BhramariScreenState extends State<BhramariScreen>
     _controller.addStatusListener(_handleAnimationStatus);
   }
 
-  Future<void> _preloadAudio() async {
+  Future<void> _setAudioSource() async {
     try {
-      await Future.wait([
-        _inhalePlayer.setSource(_inhaleSound),
-        _exhalePlayer.setSource(_exhaleSound),
-      ]);
+      // Use AudioSource.asset for assets.
+      await _exhalePlayer.setAudioSource(AudioSource.asset(_exhaleAssetPath));
     } catch (e) {
-      debugPrint('Error preloading audio: $e');
+      debugPrint('Error setting audio source: $e');
     }
   }
 
@@ -90,10 +75,8 @@ class _BhramariScreenState extends State<BhramariScreen>
 
     if (progress <= _inhaleFraction) {
       newPhase = "inhale";
-    } else if (progress <= _exhaleFraction) {
-      newPhase = "exhale";
     } else {
-      newPhase = "hold";
+      newPhase = "exhale";
     }
 
     if (newPhase != _currentPhase) {
@@ -101,9 +84,7 @@ class _BhramariScreenState extends State<BhramariScreen>
       if (isAudioPlaying) {
         _playPhaseSound(_currentPhase);
       }
-
       setState(() {
-        // Always show the capitalized phase name.
         breathingText = _currentPhase.capitalize();
       });
     }
@@ -130,20 +111,29 @@ class _BhramariScreenState extends State<BhramariScreen>
   }
 
   Future<void> _playPhaseSound(String phase) async {
-    try {
-      if (phase == "inhale") {
+    if (phase == "inhale") {
+      // No audio during inhale.
+      _exhaleTimer?.cancel();
+      await _exhalePlayer.stop();
+    } else if (phase == "exhale") {
+      _exhaleTimer?.cancel();
+      await _exhalePlayer.stop();
+
+      // Calculate the speed factor:
+      // For an 8-second audio, to play in widget.exhaleDuration seconds:
+      double speedFactor = 8.0 / widget.exhaleDuration;
+
+      // Set the playback speed (time stretching with pitch correction on supported platforms).
+      await _exhalePlayer.setSpeed(speedFactor);
+
+      // Restart the audio from the beginning.
+      await _exhalePlayer.seek(Duration.zero);
+      await _exhalePlayer.play();
+
+      // Optionally, schedule a stop if needed after the desired duration.
+      _exhaleTimer = Timer(Duration(seconds: widget.exhaleDuration), () async {
         await _exhalePlayer.stop();
-        await _inhalePlayer.resume();
-      } else if (phase == "exhale") {
-        await _inhalePlayer.stop();
-        await _exhalePlayer.resume();
-      } else {
-        // Hold phase: stop all sounds.
-        await _inhalePlayer.stop();
-        await _exhalePlayer.stop();
-      }
-    } catch (e) {
-      debugPrint('Error playing sound: $e');
+      });
     }
   }
 
@@ -154,7 +144,7 @@ class _BhramariScreenState extends State<BhramariScreen>
     });
     _controller.forward();
     if (isAudioPlaying) {
-      _playPhaseSound(_currentPhase);
+      _playPhaseSound("inhale");
     }
   }
 
@@ -177,18 +167,13 @@ class _BhramariScreenState extends State<BhramariScreen>
   }
 
   Future<void> _stopAllAudio() async {
-    await Future.wait([
-      _inhalePlayer.stop(),
-      _exhalePlayer.stop(),
-    ]);
+    _exhaleTimer?.cancel();
+    await _exhalePlayer.stop();
   }
 
   Future<void> toggleAudio() async {
     final newVolume = isAudioPlaying ? 0.0 : 1.0;
-    await Future.wait([
-      _inhalePlayer.setVolume(newVolume),
-      _exhalePlayer.setVolume(newVolume),
-    ]);
+    await _exhalePlayer.setVolume(newVolume);
     setState(() {
       isAudioPlaying = !isAudioPlaying;
     });
@@ -232,14 +217,9 @@ class _BhramariScreenState extends State<BhramariScreen>
         double scale;
 
         if (progress <= _inhaleFraction) {
-          // Scale from 1.0 to 1.5 during inhale.
           scale = 1.0 + 0.5 * (progress / _inhaleFraction);
-        } else if (progress <= _exhaleFraction) {
-          // Scale from 1.5 back down to 1.0 during exhale.
-          scale = 1.5 - 0.5 * ((progress - _inhaleFraction) / (_exhaleFraction - _inhaleFraction));
         } else {
-          // Hold phase: maintain scale at 1.0.
-          scale = 1.0;
+          scale = 1.5 - 0.5 * ((progress - _inhaleFraction) / (1 - _inhaleFraction));
         }
 
         return Transform.scale(
@@ -311,7 +291,7 @@ class _BhramariScreenState extends State<BhramariScreen>
   @override
   void dispose() {
     _controller.dispose();
-    _inhalePlayer.dispose();
+    _exhaleTimer?.cancel();
     _exhalePlayer.dispose();
     super.dispose();
   }

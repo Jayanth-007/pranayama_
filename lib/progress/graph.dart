@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProgressScreen extends StatefulWidget {
   @override
@@ -10,8 +11,7 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   DateTime? _selectedDate;
-  // Instead of dummy data, we will load real usage data.
-  // The keys are in "YYYY-MM-DD" format and values are a map with hours and an activity.
+  // Daily usage data is stored with keys in "YYYY-MM-DD" format.
   Map<String, Map<String, dynamic>> usageData = {};
 
   Map<DateTime, List<Map<String, dynamic>>> get markedDates {
@@ -28,16 +28,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   /// Fetch usage data from SharedPreferences.
-  /// It assumes that a list of days used is stored under "days_used" and for each day
-  /// there is a key "usage_YYYY-MM-DD" that stores the usage time in seconds.
+  /// It assumes that a list of days used is stored under "days_used_<uid>" and for each day
+  /// there is a key "usage_<uid>_YYYY-MM-DD" that stores the usage time in seconds.
   Future<void> _loadUsageData() async {
+    // Ensure that there is a logged in user.
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final uid = user.uid;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> daysUsed = prefs.getStringList('days_used') ?? [];
+    final daysUsedKey = 'days_used_$uid';
+    List<String> daysUsed = prefs.getStringList(daysUsedKey) ?? [];
     Map<String, Map<String, dynamic>> fetchedData = {};
 
     for (var day in daysUsed) {
       // Retrieve the usage seconds for that day.
-      int seconds = prefs.getInt("usage_$day") ?? 0;
+      final dailyUsageKey = "usage_${uid}_$day";
+      int seconds = prefs.getInt(dailyUsageKey) ?? 0;
       // Convert seconds to hours (as a double).
       double hours = seconds / 3600.0;
       // Here, we assume the activity is "Pranayama" as before.
@@ -88,9 +95,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(""),
+        title: Text("Progress"),
         backgroundColor: Color(0xFF6C63FF),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              _loadUsageData();
+            },
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

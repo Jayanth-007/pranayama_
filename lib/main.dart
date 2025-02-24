@@ -51,26 +51,48 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   /// Calculate the session duration and store it locally.
   Future<void> _logSessionTime() async {
     if (_sessionStart == null) return;
+
+    // Ensure that there is a logged in user.
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final uid = user.uid;
+
     final sessionEnd = DateTime.now();
     final sessionDuration = sessionEnd.difference(_sessionStart!);
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    int totalSeconds = prefs.getInt('total_usage_seconds') ?? 0;
+
+    // Update the total usage seconds for this user.
+    final totalUsageKey = 'total_usage_seconds_$uid';
+    int totalSeconds = prefs.getInt(totalUsageKey) ?? 0;
     totalSeconds += sessionDuration.inSeconds;
-    await prefs.setInt('total_usage_seconds', totalSeconds);
+    await prefs.setInt(totalUsageKey, totalSeconds);
+
+    // Also update the usage for today's date.
+    final today = DateTime.now().toIso8601String().substring(0, 10); // Format: YYYY-MM-DD
+    final dailyUsageKey = "usage_${uid}_$today";
+    int dailySeconds = prefs.getInt(dailyUsageKey) ?? 0;
+    dailySeconds += sessionDuration.inSeconds;
+    await prefs.setInt(dailyUsageKey, dailySeconds);
 
     print('Logged session of ${sessionDuration.inSeconds} seconds. Total usage: $totalSeconds seconds.');
   }
 
   /// Record the current day as a day the app was used.
   Future<void> _logDailyUsage() async {
+    // Ensure that there is a logged in user.
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final uid = user.uid;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().substring(0, 10); // Format: YYYY-MM-DD
-    List<String> daysUsed = prefs.getStringList('days_used') ?? [];
+    final daysUsedKey = 'days_used_$uid';
+    List<String> daysUsed = prefs.getStringList(daysUsedKey) ?? [];
 
     if (!daysUsed.contains(today)) {
       daysUsed.add(today);
-      await prefs.setStringList('days_used', daysUsed);
+      await prefs.setStringList(daysUsedKey, daysUsed);
       print('New day logged: $today');
     }
   }

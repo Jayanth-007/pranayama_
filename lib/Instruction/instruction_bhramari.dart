@@ -17,8 +17,8 @@ class BhramariBreathingPage extends StatefulWidget {
 class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
   String? _selectedTechnique;
   final List<String> _breathingTechniques = [
-    'Standard Breathing (3:6:3)',
-    'Extended Breathing (4:8:4)',
+    'Standard Breathing (4:6)',
+    'Extended Breathing (5:8)',
     'Customize Breathing Technique',
   ];
 
@@ -34,7 +34,6 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
   // Custom values for "Customize Breathing Technique".
   int? _customInhale;
   int? _customExhale;
-  int? _customHold;
 
   @override
   void initState() {
@@ -51,11 +50,11 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
     _breathingTechniques.isNotEmpty ? _breathingTechniques[0] : null;
   }
 
-  /// Returns the total seconds for one round.
+  /// Returns the total seconds for one round (inhale + exhale).
   int _getRoundSeconds() {
     if (_selectedTechnique == "Customize Breathing Technique") {
-      if (_customInhale != null && _customExhale != null && _customHold != null) {
-        return _customInhale! + _customExhale! + _customHold!;
+      if (_customInhale != null && _customExhale != null) {
+        return _customInhale! + _customExhale!;
       }
       return 0;
     } else if (_selectedTechnique != null &&
@@ -65,13 +64,12 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
         final startIndex = _selectedTechnique!.indexOf('(');
         final endIndex = _selectedTechnique!.indexOf(')');
         final ratioPart =
-        _selectedTechnique!.substring(startIndex + 1, endIndex); // e.g., "3:6:3" or "4:8:4"
+        _selectedTechnique!.substring(startIndex + 1, endIndex); // e.g., "4:6" or "5:8"
         final parts = ratioPart.split(":");
-        if (parts.length == 3) {
+        if (parts.length == 2) {
           final inhale = int.tryParse(parts[0]) ?? 0;
           final exhale = int.tryParse(parts[1]) ?? 0;
-          final hold = int.tryParse(parts[2]) ?? 0;
-          return inhale + exhale + hold;
+          return inhale + exhale;
         }
         return 0;
       } catch (e) {
@@ -97,20 +95,19 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
   }
 
   /// Uses the imported common popup from customize.dart.
-  /// Ensure your customization dialog now accepts an initialHold parameter
-  /// and returns a Map with keys 'inhale', 'exhale', and 'hold'.
+  /// Ensure your customization dialog now accepts initialInhale and initialExhale parameters
+  /// and returns a Map with keys 'inhale' and 'exhale'.
   void _showCustomDialog() async {
     final result = await showCustomizationDialog(
       context,
-      initialInhale: _customInhale ?? 3,
+      initialInhale: _customInhale ?? 4,
       initialExhale: _customExhale ?? 6,
-      initialHold: _customHold ?? 3,
+      initialHold: 0,
     );
     if (result != null) {
       setState(() {
         _customInhale = result['inhale'];
         _customExhale = result['exhale'];
-        _customHold = result['hold'];
       });
     }
   }
@@ -132,36 +129,32 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
     }
 
     switch (_selectedTechnique) {
-      case 'Standard Breathing (3:6:3)':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BhramariScreen(
-              inhaleDuration: 3,
-              exhaleDuration: 6,
-              holdDuration: 3,
-              rounds: rounds,
-            ),
-          ),
-        );
-        break;
-      case 'Extended Breathing (4:8:4)':
+      case 'Standard Breathing (4:6)':
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => BhramariScreen(
               inhaleDuration: 4,
+              exhaleDuration: 6,
+              rounds: rounds,
+            ),
+          ),
+        );
+        break;
+      case 'Extended Breathing (5:8)':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BhramariScreen(
+              inhaleDuration: 5,
               exhaleDuration: 8,
-              holdDuration: 4,
               rounds: rounds,
             ),
           ),
         );
         break;
       case 'Customize Breathing Technique':
-        if (_customInhale == null ||
-            _customExhale == null ||
-            _customHold == null) {
+        if (_customInhale == null || _customExhale == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Please set custom breathing values')),
           );
@@ -173,7 +166,6 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
             builder: (context) => BhramariScreen(
               inhaleDuration: _customInhale!,
               exhaleDuration: _customExhale!,
-              holdDuration: _customHold!,
               rounds: rounds,
             ),
           ),
@@ -338,61 +330,73 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
             SizedBox(height: 16.0),
             // Instruction cards.
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              margin:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: Text("1", style: TextStyle(color: Colors.white)),
+                  child:
+                  Text("1", style: TextStyle(color: Colors.white)),
                 ),
                 title: Text(
                     "Sit comfortably with your spine straight and relax your shoulders."),
               ),
             ),
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              margin:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: Text("2", style: TextStyle(color: Colors.white)),
+                  child:
+                  Text("2", style: TextStyle(color: Colors.white)),
                 ),
                 title: Text(
                     "Close your eyes and, if you prefer, gently press your thumbs against your ears to reduce external noise."),
               ),
             ),
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              margin:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: Text("3", style: TextStyle(color: Colors.white)),
+                  child:
+                  Text("3", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text("Take a deep, natural inhale through your nose."),
+                title: Text(
+                    "Take a deep, natural inhale through your nose."),
               ),
             ),
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              margin:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: Text("4", style: TextStyle(color: Colors.white)),
+                  child:
+                  Text("4", style: TextStyle(color: Colors.white)),
                 ),
                 title: Text(
                     "Exhale slowly while producing a soft humming sound like a bee."),
               ),
             ),
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              margin:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: Text("5", style: TextStyle(color: Colors.white)),
+                  child:
+                  Text("5", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text("Repeat the process for the set number of rounds or duration."),
+                title: Text(
+                    "Repeat the process for the set number of rounds or duration."),
               ),
             ),
           ],
@@ -405,7 +409,8 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
           children: [
             ElevatedButton(
               onPressed: _navigateToTechnique,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              style:
+              ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               child: Text("Begin"),
             ),
             ElevatedButton(
@@ -414,7 +419,8 @@ class _BhramariBreathingPageState extends State<BhramariBreathingPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const BhramariBreathingLearnMorePage(),
+                    builder: (context) =>
+                    const BhramariBreathingLearnMorePage(),
                   ),
                 );
               },
