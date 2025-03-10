@@ -20,6 +20,11 @@ class _AbdominalBreathingLearnMorePageState
   bool _isPlayerInitialized = false;
   Timer? _positionTimer;
 
+  // --- NEW FAVORITE FUNCTIONALITY ---
+  bool _isFavorite = false; // Holds the favorite state for this course.
+
+  // --- END NEW CODE ---
+
   // Simulated database with YouTube video links, thumbnails, and durations.
   final List<Map<String, String>> chapters = [
     {
@@ -44,11 +49,33 @@ class _AbdominalBreathingLearnMorePageState
   void initState() {
     super.initState();
     // Get the current user's UID from Firebase Auth.
-    // Ensure that the user is logged in; otherwise, you might use a fallback value.
     final user = FirebaseAuth.instance.currentUser;
     currentUserId = user?.uid ?? 'guest';
     _loadChapterProgress();
+    // --- NEW FAVORITE FUNCTIONALITY ---
+    _loadFavoriteStatus();
+    // --- END NEW CODE ---
   }
+
+  // --- NEW FAVORITE FUNCTIONALITY ---
+  /// Loads the favorite status for this course using a user-specific key.
+  Future<void> _loadFavoriteStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isFavorite =
+          prefs.getBool("favorite_abdominal_breathing_${currentUserId}") ?? false;
+    });
+  }
+
+  /// Toggles the favorite state and saves it using SharedPreferences.
+  Future<void> _toggleFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+    await prefs.setBool("favorite_abdominal_breathing_${currentUserId}", _isFavorite);
+  }
+  // --- END NEW CODE ---
 
   /// Initializes the YouTube player for a given video URL,
   /// starting at the previously saved progress (if any).
@@ -241,13 +268,11 @@ class _AbdominalBreathingLearnMorePageState
                   bottom: 5,
                   left: 5,
                   child: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     color: Colors.black54,
                     child: Text(
                       chapter["duration"]!,
-                      style:
-                      const TextStyle(color: Colors.white, fontSize: 12),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
                 ),
@@ -257,8 +282,7 @@ class _AbdominalBreathingLearnMorePageState
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 chapter["title"]!,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -269,7 +293,7 @@ class _AbdominalBreathingLearnMorePageState
               width: double.infinity,
               color: Colors.grey[300],
               child: FractionallySizedBox(
-                widthFactor: progress, // Value between 0.0 and 1.0
+                widthFactor: progress,
                 alignment: Alignment.centerLeft,
                 child: Container(
                   height: 4,
@@ -286,7 +310,20 @@ class _AbdominalBreathingLearnMorePageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Abdominal Breathing")),
+      appBar: AppBar(
+        title: const Text("Abdominal Breathing"),
+        actions: [
+          // --- NEW FAVORITE FUNCTIONALITY ---
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : Colors.black,
+            ),
+            onPressed: _toggleFavorite,
+          ),
+          // --- END NEW CODE ---
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

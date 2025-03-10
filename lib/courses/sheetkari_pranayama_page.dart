@@ -1,8 +1,8 @@
 // sheetkari_pranayama_page.dart
 import 'package:flutter/material.dart';
 
-class SheetkariPranayamaPage extends StatelessWidget {
-  const SheetkariPranayamaPage({Key? key}) : super(key: key);
+class SheetkariPranayamaLearnMorePage extends StatelessWidget {
+  const SheetkariPranayamaLearnMorePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

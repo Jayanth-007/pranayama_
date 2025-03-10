@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:meditation_app/Breathing_Pages/bhramari_screen.dart';
+import 'package:meditation_app/courses/nadi_shodhana_pranayama_page.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 // Import your breathing exercise screen.
 import '../Breathing_Pages/bilateral_screen.dart';
 // Import the modified TimerPickerWidget.
 import '../common_widgets/timer_widget.dart';
-// Import the Learn More page.
-import '../courses/abdominal_breathing_page.dart';
 // Import the common customization popup from customize.dart.
 import '../Customization/customize.dart';
 
 enum DurationMode { rounds, minutes }
 
-class AbdominalBreathingPage extends StatefulWidget {
+class NadiShodhanaPage extends StatefulWidget {
   @override
-  _AbdominalBreathingPageState createState() => _AbdominalBreathingPageState();
+  _NadiShodhanaPageState createState() => _NadiShodhanaPageState();
 }
 
-class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
+class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
   String? _selectedTechnique;
   final List<String> _breathingTechniques = [
-    '4:6 Breathing Technique(Recommended)',
-    '2:3 Breathing Technique',
-    'Customize Breathing Technique',
+    '4:4 Nadi Shodhana (Standard)',
+    'Customize Technique',
   ];
 
-  // Hardcoded YouTube video URL.
-  final String _videoUrl = "https://www.youtube.com/watch?v=HhDUXFJDgB4";
+  // Hardcoded YouTube video URL for Nadi Shodhana demonstration.
+  final String _videoUrl = "https://www.youtube.com/watch?v=R2cEQEKn3YM";
   late YoutubePlayerController _youtubePlayerController;
 
   // Default mode: rounds.
@@ -36,10 +33,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   // The picker value represents rounds or minutes. (Default set to 5)
   double _pickerValue = 5.0;
 
-  // Custom values for "Customize Breathing Technique"
+  // Custom values for "Customize Technique"
   int? _customInhale;
   int? _customExhale;
-  // The hold duration will always be 0 for abdominal breathing.
+  // For Nadi Shodhana, hold duration is not used.
   final int _customHold = 0;
 
   @override
@@ -59,18 +56,22 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
 
   /// Returns the total seconds for one round.
   int _getRoundSeconds() {
-    if (_selectedTechnique == "Customize Breathing Technique") {
+    if (_selectedTechnique == "Customize Technique") {
       if (_customInhale != null && _customExhale != null) {
-        return _customInhale! + _customExhale!; // Hold is always 0.
+        // Hold is always 0.
+        return _customInhale! + _customExhale! + 0;
       }
       return 0;
-    } else if (_selectedTechnique != null && _selectedTechnique!.contains(":")) {
+    } else if (_selectedTechnique != null &&
+        _selectedTechnique!.contains(":")) {
       try {
+        // Extract ratio from the technique string. For example, "4:4" from "4:4 Nadi Shodhana (Standard)"
         final ratioPart = _selectedTechnique!.split(" ")[0];
         final parts = ratioPart.split(":");
         final inhale = int.tryParse(parts[0]) ?? 0;
         final exhale = int.tryParse(parts[1]) ?? 0;
-        return inhale + exhale; // Hold is 0 for predefined techniques.
+        // Hold is 0 for these predefined techniques.
+        return inhale + exhale + 0;
       } catch (e) {
         return 0;
       }
@@ -93,12 +94,13 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
     return totalSeconds ~/ secondsPerRound;
   }
 
-  /// Uses the imported customization popup.
+  /// Uses the imported common popup from customize.dart.
+  /// Note: The customization popup only collects inhale and exhale durations.
   void _showCustomDialog() async {
     final result = await showCustomizationDialog(
       context,
       initialInhale: _customInhale ?? 4,
-      initialExhale: _customExhale ?? 6,
+      initialExhale: _customExhale ?? 4,
       initialHold: 0,
     );
     if (result != null) {
@@ -125,32 +127,21 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       rounds = _calculateRoundsFromMinutes();
     }
 
+    // For all techniques, we pass holdDuration as 0.
     switch (_selectedTechnique) {
-      case '2:3 Breathing Technique':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BilateralScreen(
-              inhaleDuration: 2,
-              exhaleDuration: 3,
-              rounds: rounds,
-            ),
-          ),
-        );
-        break;
-      case '4:6 Breathing Technique(Recommended)':
+      case '4:4 Nadi Shodhana (Standard)':
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => BilateralScreen(
               inhaleDuration: 4,
-              exhaleDuration: 6,
+              exhaleDuration: 4,
               rounds: rounds,
             ),
           ),
         );
         break;
-      case 'Customize Breathing Technique':
+      case 'Customize Technique':
         if (_customInhale == null || _customExhale == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Please set custom breathing values')),
@@ -189,7 +180,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
             });
           },
         ),
-        Text("Rounds", style: TextStyle(color: const Color(0xff304674))),
+        Text("Rounds"),
         Radio<DurationMode>(
           value: DurationMode.minutes,
           groupValue: _durationMode,
@@ -200,7 +191,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
             });
           },
         ),
-        Text("Minutes", style: TextStyle(color: const Color(0xff304674))),
+        Text("Minutes"),
       ],
     );
   }
@@ -211,10 +202,12 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
         ? List<int>.generate(20, (index) => (index + 1) * 5)
         : List<int>.generate(12, (index) => (index + 1) * 5);
 
-    final String titleLabel =
-    _durationMode == DurationMode.rounds ? "Select Rounds" : "Select Duration";
-    final String bottomLabel =
-    _durationMode == DurationMode.rounds ? "rounds" : "minutes";
+    final String titleLabel = _durationMode == DurationMode.rounds
+        ? "Select Rounds"
+        : "Select Duration";
+    final String bottomLabel = _durationMode == DurationMode.rounds
+        ? "rounds"
+        : "minutes";
 
     return TimerPickerWidget(
       durations: options,
@@ -235,9 +228,8 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Abdominal Breathing"),
+        title: Text("Nadi Shodhana Pranayama"),
         centerTitle: true,
-        backgroundColor: const Color(0xff304674), // Accent
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -247,10 +239,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
             // Technique selection.
             Text(
               "Select a Breathing Technique",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff304674)), // Accent
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.0),
             DropdownButton<String>(
@@ -260,7 +249,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
               items: _breathingTechniques.map((technique) {
                 return DropdownMenuItem<String>(
                   value: technique,
-                  child: Text(technique, style: TextStyle(color: const Color(0xff304674))),
+                  child: Text(technique),
                 );
               }).toList(),
               onChanged: (value) {
@@ -268,7 +257,8 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                   _selectedTechnique = value;
                   _pickerValue = 5.0;
                 });
-                if (value == "Customize Breathing Technique") {
+                // Immediately show the customization popup if the option is selected.
+                if (value == "Customize Technique") {
                   _showCustomDialog();
                 }
               },
@@ -286,7 +276,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xff98bad5), // Primary
+                  color: Colors.teal,
                 ),
                 textAlign: TextAlign.center,
               )
@@ -295,60 +285,48 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xff98bad5), // Primary
+                  color: Colors.teal,
                 ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.0),
             ],
             Text(
-              "What is Abdominal Breathing?",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff304674)), // Accent
+              "What is Nadi Shodhana Pranayama?",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 4.0),
             Text(
-              "Abdominal breathing is a technique that focuses on deep breathing by engaging the diaphragm rather than the chest. This method promotes relaxation, improves oxygen flow, and helps reduce stress.",
-              style: TextStyle(fontSize: 16, color: Colors.black87),
+              "Nadi Shodhana Pranayama, also known as alternate nostril breathing, is a yogic practice designed to balance the body’s energy and calm the mind. This technique involves alternating the breath between the nostrils to promote mental clarity, reduce stress, and enhance respiratory function.",
+              style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 24.0),
             Text(
               "Watch a Demonstration",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff304674)),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.0),
             YoutubePlayer(
               controller: _youtubePlayerController,
               showVideoProgressIndicator: true,
-              progressIndicatorColor: const Color(0xff98bad5), // Primary
+              progressIndicatorColor: Colors.teal,
             ),
             SizedBox(height: 24.0),
             Text(
               "Step-by-Step Instructions",
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff304674)),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16.0),
-            // Instruction cards.
+            // Instruction cards for Nadi Shodhana.
             Card(
               margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: const Color(0xff98bad5), // Primary
+                  backgroundColor: Colors.teal,
                   child: Text("1", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text(
-                  "Sit in a comfortable position and relax your shoulders.",
-                  style: TextStyle(color: const Color(0xff304674)),
-                ),
+                title: Text("Sit comfortably with your spine erect and relax your shoulders."),
               ),
             ),
             Card(
@@ -356,13 +334,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: const Color(0xff98bad5),
+                  backgroundColor: Colors.teal,
                   child: Text("2", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text(
-                  "Place one hand on your abdomen and the other on your chest.",
-                  style: TextStyle(color: const Color(0xff304674)),
-                ),
+                title: Text("Close your right nostril gently with your thumb and inhale slowly through your left nostril."),
               ),
             ),
             Card(
@@ -370,13 +345,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: const Color(0xff98bad5),
+                  backgroundColor: Colors.teal,
                   child: Text("3", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text(
-                  "Inhale deeply through your nose for 4 seconds, feeling your abdomen expand.",
-                  style: TextStyle(color: const Color(0xff304674)),
-                ),
+                title: Text("Close your left nostril with your ring finger, then open your right nostril and exhale slowly."),
               ),
             ),
             Card(
@@ -384,13 +356,21 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
               elevation: 3.0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: const Color(0xff98bad5),
+                  backgroundColor: Colors.teal,
                   child: Text("4", style: TextStyle(color: Colors.white)),
                 ),
-                title: Text(
-                  "Exhale slowly through your mouth for 6 seconds, noticing your abdomen contract.",
-                  style: TextStyle(color: const Color(0xff304674)),
+                title: Text("Inhale slowly through your right nostril, then close it and open your left nostril to exhale."),
+              ),
+            ),
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              elevation: 3.0,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.teal,
+                  child: Text("5", style: TextStyle(color: Colors.white)),
                 ),
+                title: Text("This completes one round. Continue alternating for several rounds."),
               ),
             ),
           ],
@@ -403,9 +383,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
           children: [
             ElevatedButton(
               onPressed: _navigateToTechnique,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff98bad5), // Primary
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               child: Text("Begin"),
             ),
             ElevatedButton(
@@ -413,13 +391,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AbdominalBreathingLearnMorePage(),
+                    builder: (context) => const NadiShodhanaPranayamaPage(),
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff304674), // Accent
-              ),
               child: Text("Learn More"),
             ),
           ],

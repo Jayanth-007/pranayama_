@@ -20,6 +20,10 @@ class _BhramariBreathingLearnMorePageState
   bool _isPlayerInitialized = false;
   Timer? _positionTimer;
 
+  // --- NEW FAVORITE FUNCTIONALITY ---
+  bool _isFavorite = false; // Holds the favorite state for this course.
+  // --- END NEW CODE ---
+
   // Simulated database with YouTube video links, thumbnails, and durations.
   final List<Map<String, String>> chapters = [
     {
@@ -43,12 +47,34 @@ class _BhramariBreathingLearnMorePageState
   @override
   void initState() {
     super.initState();
-    // Get the current user's UID from Firebase Auth.
-    // Ensure that the user is logged in; otherwise, you might use a fallback value.
     final user = FirebaseAuth.instance.currentUser;
     currentUserId = user?.uid ?? 'guest';
     _loadChapterProgress();
+    // --- NEW FAVORITE FUNCTIONALITY ---
+    _loadFavoriteStatus();
+    // --- END NEW CODE ---
   }
+
+  // --- NEW FAVORITE FUNCTIONALITY ---
+  /// Loads the favorite status for this course using a user-specific key.
+  Future<void> _loadFavoriteStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      // Updated key to "favorite_bhramari_pranayama_${currentUserId}"
+      _isFavorite =
+          prefs.getBool("favorite_bhramari_pranayama_${currentUserId}") ?? false;
+    });
+  }
+
+  /// Toggles the favorite state and saves it using SharedPreferences.
+  Future<void> _toggleFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+    await prefs.setBool("favorite_bhramari_pranayama_${currentUserId}", _isFavorite);
+  }
+  // --- END NEW CODE ---
 
   /// Initializes the YouTube player for a given video URL,
   /// starting at the previously saved progress (if any).
@@ -113,7 +139,7 @@ class _BhramariBreathingLearnMorePageState
       int savedSeconds =
           prefs.getInt("progress_${currentUserId}_$videoId") ?? 0;
       _chapterProgressSeconds[videoId] = savedSeconds;
-      // Parse the duration string (e.g., "17 mins").
+      // Parse the duration string (e.g., "8 mins" or "6 mins").
       int durationMins = int.tryParse(chapter["duration"]!.split(" ")[0]) ?? 1;
       double fraction = savedSeconds / (durationMins * 60);
       if (fraction > 1) fraction = 1;
@@ -269,7 +295,7 @@ class _BhramariBreathingLearnMorePageState
               width: double.infinity,
               color: Colors.grey[300],
               child: FractionallySizedBox(
-                widthFactor: progress, // Value between 0.0 and 1.0
+                widthFactor: progress,
                 alignment: Alignment.centerLeft,
                 child: Container(
                   height: 4,
@@ -286,7 +312,20 @@ class _BhramariBreathingLearnMorePageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Bhramari Breathing")),
+      appBar: AppBar(
+        title: const Text("Bhramari Breathing"),
+        actions: [
+          // --- NEW FAVORITE FUNCTIONALITY ---
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : Colors.black,
+            ),
+            onPressed: _toggleFavorite,
+          ),
+          // --- END NEW CODE ---
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

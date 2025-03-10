@@ -24,11 +24,11 @@ class CoursesPage extends StatelessWidget {
     "Complete Breathing": () => const CompleteBreathingPage(),
     "Bhramari Pranayama": () => const BhramariBreathingLearnMorePage(),
     "Nadi Shodhana Pranayama": () => const NadiShodhanaPranayamaPage(),
-    "Ujjayi Pranayama": () => const UjjayiPranayamaPage(),
-    "Surya Bhedana Pranayama": () => const SuryaBhedanaPranayamaPage(),
-    "Chandra Bhedana Pranayama": () => const ChandraBhedanaPranayamaPage(),
-    "Sheetali Pranayama": () => const SheetaliPranayamaPage(),
-    "Sheetkari Pranayama": () => const SheetkariPranayamaPage(),
+    "Ujjayi Pranayama": () => const UjjayiPranayamaLearnMorePage(),
+    "Surya Bhedana Pranayama": () => const SuryaBhedanaPranayamaLearnMorePage(),
+    "Chandra Bhedana Pranayama": () => const ChandraBhedanaPranayamaLearnMorePage(),
+    "Sheetali Pranayama": () => const SheetaliPranayamaLearnMorePage(),
+    "Sheetkari Pranayama": () => const SheetkariPranayamaLearnMorePage(),
   };
 
   // Sample course data for each section.
@@ -51,7 +51,12 @@ class CoursesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Courses")),
+      backgroundColor: const Color(0xffd8e1e8), // Background/Neutral
+      appBar: AppBar(
+        title: const Text("Courses"),
+        backgroundColor: const Color(0xff304674), // Accent
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -87,8 +92,14 @@ class CoursesPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xff304674), // Accent
+              ),
+            ),
             TextButton(
               onPressed: () {
                 // Navigate to the grid view page.
@@ -103,7 +114,10 @@ class CoursesPage extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text("View All", style: TextStyle(color: Colors.blue)),
+              child: const Text(
+                "View All",
+                style: TextStyle(color: Color(0xff98bad5)), // Primary
+              ),
             ),
           ],
         ),
@@ -144,7 +158,7 @@ class CoursesPage extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 100,
+              width: 160,
               height: 100,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
@@ -162,7 +176,7 @@ class CoursesPage extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 course["title"]!,
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 12, color: Color(0xff304674)), // Accent
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

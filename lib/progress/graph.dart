@@ -93,20 +93,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ..sort((a, b) => a.key.compareTo(b.key));
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text("Progress"),
-        backgroundColor: Color(0xFF6C63FF),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              _loadUsageData();
-            },
-          )
-        ],
-      ),
+      backgroundColor: const Color(0xffd8e1e8), // Background/Neutral
+      // Removed the AppBar to eliminate the top heading and refresh icon.
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +118,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 60),
       decoration: BoxDecoration(
-        color: Color(0xFF6C63FF),
+        color: const Color(0xff304674), // Accent
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(30),
         ),
@@ -178,8 +166,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
       width: 110,
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1DB954), Color(0xFF1AA34A)],
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xff304674), // Accent
+            Color(0xff98bad5), // Primary
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -216,7 +207,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           Text(
             "Calendar",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
           ),
           SizedBox(height: 10),
           TableCalendar(
@@ -231,16 +222,41 @@ class _ProgressScreenState extends State<ProgressScreen> {
             },
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
-                color: Color(0xFF1DB954),
+                color: const Color(0xff98bad5), // Primary
                 shape: BoxShape.circle,
               ),
               todayTextStyle: TextStyle(color: Colors.white),
               markerDecoration: BoxDecoration(
-                color: Color(0xFF1DB954),
+                color: const Color(0xff98bad5), // Primary
                 shape: BoxShape.circle,
               ),
             ),
             eventLoader: (date) => markedDates[date] ?? [],
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, date, focusedDay) {
+                // Format the date to match the keys in usageData ("YYYY-MM-DD")
+                String formattedDate =
+                    "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+                // If usage data exists for this day, highlight it with the blue accent.
+                if (usageData.containsKey(formattedDate)) {
+                  return Container(
+                    margin: const EdgeInsets.all(6.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff304674),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${date.day}',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                }
+                // Return null to use the default day cell if there's no usage data.
+                return null;
+              },
+            ),
           ),
         ],
       ),
@@ -258,7 +274,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           Text(
             "Data for $selectedDateStr:",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
           ),
           SizedBox(height: 10),
           Text(
@@ -280,7 +296,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           Text(
             "Consistency Graph",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
           ),
           SizedBox(height: 10),
           Container(
@@ -297,11 +313,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       ),
                     ),
                     isCurved: true,
-                    color: Color(0xFF6C63FF),
+                    color: const Color(0xff304674), // Accent
                     barWidth: 4,
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Color(0xFF6C63FF).withOpacity(0.3),
+                      color: const Color(0xff304674).withOpacity(0.3), // Accent with opacity
                     ),
                     dotData: FlDotData(show: true),
                   ),
