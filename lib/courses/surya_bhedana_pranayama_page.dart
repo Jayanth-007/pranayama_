@@ -1,8 +1,8 @@
 // surya_bhedana_pranayama_page.dart
 import 'package:flutter/material.dart';
 
-class SuryaBhedanaPranayamaPage extends StatelessWidget {
-  const SuryaBhedanaPranayamaPage({Key? key}) : super(key: key);
+class SuryaBhedanaPranayamaLearnMorePage extends StatelessWidget {
+  const SuryaBhedanaPranayamaLearnMorePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

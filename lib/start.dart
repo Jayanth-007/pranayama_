@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:meditation_app/Welcome/welcome_screen.dart'; // Ensure only one correct import
+import 'package:meditation_app/Welcome/welcome_screen.dart';
+import 'package:meditation_app/greeting/login_page.dart'; // Ensure only one correct import
 
 class StartScreen extends StatefulWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -16,7 +17,7 @@ class _StartScreenState extends State<StartScreen> {
     Future.delayed(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()), // Navigate to WelcomeScreen
+        MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to WelcomeScreen
       );
     });
   }

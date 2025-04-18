@@ -1,8 +1,8 @@
 // ujjayi_pranayama_page.dart
 import 'package:flutter/material.dart';
 
-class UjjayiPranayamaPage extends StatelessWidget {
-  const UjjayiPranayamaPage({Key? key}) : super(key: key);
+class UjjayiPranayamaLearnMorePage extends StatelessWidget {
+  const UjjayiPranayamaLearnMorePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

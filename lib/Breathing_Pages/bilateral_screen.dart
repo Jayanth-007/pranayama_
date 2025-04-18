@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 
 class BilateralScreen extends StatefulWidget {
-  final int inhaleDuration; // Duration in seconds for inhale
-  final int exhaleDuration; // Duration in seconds for exhale
-  final int rounds; // Total number of rounds to perform
+  final int inhaleDuration;
+  final int exhaleDuration;
+  final int rounds;
 
   const BilateralScreen({
     Key? key,
@@ -21,79 +21,139 @@ class BilateralScreen extends StatefulWidget {
 class _BilateralScreenState extends State<BilateralScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late AudioPlayer _audioPlayer;
+  late AudioPlayer _inhalePlayer;
+  late AudioPlayer _exhalePlayer;
   bool isRunning = false;
   bool isAudioPlaying = false;
-  String breathingText = "Inhale";
-  int _currentRound = 0; // Counts completed rounds
-  String _currentPhase = "inhale"; // Tracks the current breathing phase
+  String breathingText = "Get Ready";
+  int _currentRound = 0;
+  String _currentPhase = "prepare";
+
+  // Cache AudioSource to prevent repeated creation
+  late final AssetSource _inhaleSound;
+  late final AssetSource _exhaleSound;
+
+  // Precalculate timing values
+  late final double _inhaleFraction;
+  late final double _gapFraction;
 
   @override
   void initState() {
     super.initState();
 
-    // Set up the AnimationController with the sum of inhale and exhale durations.
+    // Initialize audio sources
+    _inhaleSound = AssetSource('../assets/music/inhale_bell1.mp3');
+    _exhaleSound = AssetSource('../assets/music/exhale_bell1.mp3');
+
+    // Precalculate timing fractions
+    final totalDuration = widget.inhaleDuration + 0.10 + widget.exhaleDuration;
+    _inhaleFraction = widget.inhaleDuration / totalDuration;
+    _gapFraction = (widget.inhaleDuration + 0.10) / totalDuration;
+
+    // Initialize separate audio players for inhale and exhale
+    _inhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+    _exhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+
+    // Preload audio files
+    _preloadAudio();
+
     _controller = AnimationController(
-      duration: Duration(seconds: widget.inhaleDuration + widget.exhaleDuration),
+      duration: Duration(seconds: totalDuration.toInt()),
       vsync: this,
     );
 
-    // Update the breathing text and phase based on animation progress.
-    _controller.addListener(() {
-      double progress = _controller.value;
-      double inhaleFraction = widget.inhaleDuration /
-          (widget.inhaleDuration + widget.exhaleDuration);
+    // Optimize animation listener
+    _controller.addListener(_handleAnimationProgress);
+    _controller.addStatusListener(_handleAnimationStatus);
+  }
 
-      String newPhase = (progress <= inhaleFraction) ? "inhale" : "exhale";
-      if (newPhase != _currentPhase) {
-        _currentPhase = newPhase;
-        _playPhaseSound(_currentPhase); // Play sound for the new phase
+  Future<void> _preloadAudio() async {
+    try {
+      await Future.wait([
+        _inhalePlayer.setSource(_inhaleSound),
+        _exhalePlayer.setSource(_exhaleSound),
+      ]);
+    } catch (e) {
+      debugPrint('Error preloading audio: $e');
+    }
+  }
+
+  void _handleAnimationProgress() {
+    double progress = _controller.value;
+    String newPhase;
+
+    if (progress <= _inhaleFraction) {
+      newPhase = "inhale";
+    } else if (progress <= _gapFraction) {
+      newPhase = "gap"; // Short gap between inhale and exhale
+    } else {
+      newPhase = "exhale";
+    }
+
+    if (newPhase != _currentPhase) {
+      _currentPhase = newPhase;
+      if (isAudioPlaying) {
+        _playPhaseSound(_currentPhase);
       }
 
       setState(() {
-        breathingText = _currentPhase == "inhale" ? "Inhale" : "Exhale";
+        breathingText = _currentPhase == "gap" ? "" : _currentPhase.capitalize();
       });
-    });
+    }
+  }
 
-    _controller.addStatusListener((status) async {
-      if (status == AnimationStatus.completed) {
-        _currentRound++;
-        if (_currentRound < widget.rounds) {
-          _controller.reset();
-          await Future.delayed(const Duration(milliseconds: 5));
+  void _handleAnimationStatus(AnimationStatus status) async {
+    if (status == AnimationStatus.completed) {
+      _currentRound++;
+      if (_currentRound < widget.rounds) {
+        _controller.reset();
+        // Reduced delay for smoother transition
+        await Future.delayed(const Duration(milliseconds: 2));
+        if (isRunning) {
           _startBreathingCycle();
-        } else {
-          setState(() {
-            isRunning = false;
-          });
         }
+      } else {
+        setState(() {
+          isRunning = false;
+          breathingText = "Complete";
+        });
+        await _stopAllAudio(); // Stop audio when cycle is complete
       }
-    });
-
-    _audioPlayer = AudioPlayer();
+    }
   }
 
-  // Play the sound for the current breathing phase
-  void _playPhaseSound(String phase) async {
-    if (!isAudioPlaying) return; // Skip if audio is muted
-
-    String soundFile = phase == "inhale"
-        ? '../assets/music/inhale_bell.mp3'
-        : '../assets/music/exhale_bell.mp3';
-
-    await _audioPlayer.stop(); // Stop any ongoing sound
-    await _audioPlayer.play(AssetSource(soundFile));
+  Future<void> _playPhaseSound(String phase) async {
+    try {
+      if (phase == "inhale") {
+        await _exhalePlayer.stop();
+        await _inhalePlayer.resume();
+      } else if (phase == "exhale") {
+        await _inhalePlayer.stop();
+        await _exhalePlayer.resume();
+      } else {
+        await _inhalePlayer.stop();
+        await _exhalePlayer.stop();
+      }
+    } catch (e) {
+      debugPrint('Error playing sound: $e');
+    }
   }
 
-  // Starts the breathing cycle.
   void _startBreathingCycle() {
+    setState(() {
+      breathingText = "Inhale";
+      _currentPhase = "inhale";
+    });
     _controller.forward();
+    if (isAudioPlaying) {
+      _playPhaseSound(_currentPhase);
+    }
   }
 
-  // Toggles the breathing cycle.
-  void toggleBreathing() {
+  Future<void> toggleBreathing() async {
     if (isRunning) {
       _controller.stop();
+      await _stopAllAudio();
       setState(() {
         isRunning = false;
       });
@@ -108,23 +168,22 @@ class _BilateralScreenState extends State<BilateralScreen>
     }
   }
 
-  // Toggles mute/unmute without pausing or resuming playback.
+  Future<void> _stopAllAudio() async {
+    await Future.wait([
+      _inhalePlayer.stop(),
+      _exhalePlayer.stop(),
+    ]);
+  }
+
   Future<void> toggleAudio() async {
-    if (isAudioPlaying) {
-      await _audioPlayer.setVolume(0);
-    } else {
-      await _audioPlayer.setVolume(1);
-    }
+    final newVolume = isAudioPlaying ? 0.0 : 1.0;
+    await Future.wait([
+      _inhalePlayer.setVolume(newVolume),
+      _exhalePlayer.setVolume(newVolume),
+    ]);
     setState(() {
       isAudioPlaying = !isAudioPlaying;
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _audioPlayer.dispose();
-    super.dispose();
   }
 
   Widget _buildTextDisplay(String text) {
@@ -162,14 +221,14 @@ class _BilateralScreenState extends State<BilateralScreen>
       animation: _controller,
       builder: (context, child) {
         double progress = _controller.value;
-        double inhaleFraction = widget.inhaleDuration /
-            (widget.inhaleDuration + widget.exhaleDuration);
         double scale;
 
-        if (progress <= inhaleFraction) {
-          scale = 1.0 + 0.5 * (progress / inhaleFraction);
+        if (progress <= _inhaleFraction) {
+          scale = 1.0 + 0.5 * (progress / _inhaleFraction);
+        } else if (progress <= _gapFraction) {
+          scale = 1.5; // Hold the scale during the gap
         } else {
-          scale = 1.5 - 0.5 * ((progress - inhaleFraction) / (1 - inhaleFraction));
+          scale = 1.5 - 0.5 * ((progress - _gapFraction) / (1 - _gapFraction));
         }
 
         return Transform.scale(
@@ -240,21 +299,68 @@ class _BilateralScreenState extends State<BilateralScreen>
     }
   }
 
+  Widget _buildTimeProgressBar() {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        double progress = _controller.value;
+        int totalSeconds = _controller.duration?.inSeconds ?? 1;
+        int remainingSeconds = totalSeconds - (progress * totalSeconds).toInt();
+        int minutes = remainingSeconds ~/ 60;
+        int seconds = remainingSeconds % 60;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LinearProgressIndicator(
+                value: 1 - progress,
+                backgroundColor: Colors.grey[800],
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _inhalePlayer.dispose();
+    _exhalePlayer.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Abdominal Breathing",
+          "Breathing",
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
-        elevation: 10,
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: Stack(
         children: [
@@ -275,14 +381,8 @@ class _BilateralScreenState extends State<BilateralScreen>
                   _buildBreathingImage(),
                   const SizedBox(height: 50),
                   _buildControlButtons(),
-                  Text(
-                    "Round: ${_currentRound < widget.rounds ? _currentRound + 1 : widget.rounds} / ${widget.rounds}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  const SizedBox(height: 20),
+                  _buildTimeProgressBar(),
                 ],
               ),
             ),
@@ -302,5 +402,12 @@ class _BilateralScreenState extends State<BilateralScreen>
         ],
       ),
     );
+  }
+}
+
+// Extension to capitalize strings
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${this.substring(1)}";
   }
 }

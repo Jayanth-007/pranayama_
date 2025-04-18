@@ -12,7 +12,20 @@
           "package_name": "com.example.meditation_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1023967248777-dlgktb0f02cftkm5219am6ugo7rf5i4l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.meditation_app",
+            "certificate_hash": "518d95e4868adef8829ff5dd51283b885a29eda3"
+          }
+        },
+        {
+          "client_id": "1023967248777-aasnf8qfprqug792v7e2d1mngsii88fj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAeNZbTxtxlIW-5H7699OVVPfqhXVnkXC0"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1023967248777-aasnf8qfprqug792v7e2d1mngsii88fj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -11,7 +11,7 @@ class AppRoutes {
 
   static final Map<String, WidgetBuilder> routes = {
     '/start': (context) => StartScreen(),
-    '/breathing24': (context) => BilateralScreen(), // Replace with actual widget
+    // Replace with actual widget
     '/breathing46': (context) => AbdominalScreen(),// 4:6 Breathing Technique Screen
     // Add more routes for other techniques
     // Example: meditationBreathing: (context) => MeditationScreen(),

@@ -1,170 +1,275 @@
-// courses_page.dart
 import 'package:flutter/material.dart';
-import 'courses_grid_page.dart';
+import 'package:meditation_app/Instruction/instruction_abdo.dart';
+import 'package:meditation_app/Instruction/instruction_chest.dart';
+import 'package:meditation_app/Instruction/instruction_complete.dart';
+import 'package:meditation_app/courses/bhramari_pranayama_page.dart';
+import 'package:meditation_app/courses/chandra_bhedana_pranayama_page.dart';
+import 'package:meditation_app/courses/nadi_shodhana_pranayama_page.dart';
+import 'package:meditation_app/courses/sheetali_pranayama_page.dart';
+import 'package:meditation_app/courses/sheetkari_pranayama_page.dart';
+import 'package:meditation_app/courses/surya_bhedana_pranayama_page.dart';
+import 'package:meditation_app/courses/ujjayi_pranayama_page.dart';
 
-// Import your dedicated course pages:
-import 'courses/abdominal_breathing_page.dart';
-import 'courses/chest_breathing_page.dart';
-import 'courses/complete_breathing_page.dart';
-import 'courses/bhramari_pranayama_page.dart';
-import 'courses/nadi_shodhana_pranayama_page.dart';
-import 'courses/ujjayi_pranayama_page.dart';
-import 'courses/surya_bhedana_pranayama_page.dart';
-import 'courses/chandra_bhedana_pranayama_page.dart';
-import 'courses/sheetali_pranayama_page.dart';
-import 'courses/sheetkari_pranayama_page.dart';
+// First, define the CourseInfo class outside the CoursesPage class
+class CourseInfo {
+  final String title;
+  final String image;
+  final Color color;
+
+  CourseInfo({
+    required this.title,
+    required this.image,
+    required this.color,
+  });
+}
 
 class CoursesPage extends StatelessWidget {
   CoursesPage({Key? key}) : super(key: key);
 
-  // Mapping of course titles to their dedicated pages.
+  // Mapping of course titles to their dedicated pages
   final Map<String, Widget Function()> coursePages = {
-    "Abdominal Breathing": () => const AbdominalBreathingLearnMorePage(),
-    "Chest Breathing": () => const ChestBreathingPage(),
-    "Complete Breathing": () => const CompleteBreathingPage(),
-    "Bhramari Pranayama": () => const BhramariPranayamaPage(),
+    "Abdominal Breathing": () =>  AbdominalBreathingPage(),
+    "Chest Breathing": () =>  ChestBreathingPage(),
+    "Complete Breathing": () =>  CompleteBreathingPage(),
+    "Bhramari Pranayama": () => BhramariBreathingLearnMorePage(),
     "Nadi Shodhana Pranayama": () => const NadiShodhanaPranayamaPage(),
-    "Ujjayi Pranayama": () => const UjjayiPranayamaPage(),
-    "Surya Bhedana Pranayama": () => const SuryaBhedanaPranayamaPage(),
-    "Chandra Bhedana Pranayama": () => const ChandraBhedanaPranayamaPage(),
-    "Sheetali Pranayama": () => const SheetaliPranayamaPage(),
-    "Sheetkari Pranayama": () => const SheetkariPranayamaPage(),
+    "Ujjayi Pranayama": () => const UjjayiPranayamaLearnMorePage(),
+    "Surya Bhedana Pranayama": () => const SuryaBhedanaPranayamaLearnMorePage(),
+    "Chandra Bhedana Pranayama": () => const ChandraBhedanaPranayamaLearnMorePage(),
+    "Sheetali Pranayama": () => const SheetaliPranayamaLearnMorePage(),
+    "Sheetkari Pranayama": () => const SheetkariPranayamaLearnMorePage(),
   };
 
-  // Sample course data for each section.
-  final List<Map<String, String>> breathingCourses = [
-    {"title": "Abdominal Breathing", "image": "assets/images/abdominal_breathing.png"},
-    {"title": "Chest Breathing", "image": "assets/images/chest_breathing.png"},
-    {"title": "Complete Breathing", "image": "assets/images/complete_breathing.png"},
-  ];
-
-  final List<Map<String, String>> pranayamaCourses = [
-    {"title": "Bhramari Pranayama", "image": "assets/images/bhramari.png"},
-    {"title": "Nadi Shodhana Pranayama", "image": "assets/images/nadishodana.png"},
-    {"title": "Ujjayi Pranayama", "image": "assets/images/ujjayi.png"},
-    {"title": "Surya Bhedana Pranayama", "image": "assets/images/suryabedhana.png"},
-    {"title": "Chandra Bhedana Pranayama", "image": "assets/images/chandrabedhana.png"},
-    {"title": "Sheetali Pranayama", "image": "assets/images/sheetali.png"},
-    {"title": "Sheetkari Pranayama", "image": "assets/images/sheetkari.png"},
-  ];
+  // Course data organized by category
+  final Map<String, List<CourseInfo>> courseCategories = {
+    "Breathing Techniques": [
+      CourseInfo(
+        title: "Abdominal Breathing",
+        image: "assets/images/abdominal_breathing.png",
+        color: const Color(0xFF6A8CAF),
+      ),
+      CourseInfo(
+        title: "Chest Breathing",
+        image: "assets/images/chest_breathing.png",
+        color: const Color(0xFF7F9EB2),
+      ),
+      CourseInfo(
+        title: "Complete Breathing",
+        image: "assets/images/complete_breathing.png",
+        color: const Color(0xFF95B0C5),
+      ),
+    ],
+    "Pranayama Techniques": [
+      CourseInfo(
+        title: "Bhramari Pranayama",
+        image: "assets/images/bhramari.png",
+        color: const Color(0xFF8A6BBE),
+      ),
+      CourseInfo(
+        title: "Nadi Shodhana Pranayama",
+        image: "assets/images/nadishodana.png",
+        color: const Color(0xFF7B5CB3),
+      ),
+      CourseInfo(
+        title: "Ujjayi Pranayama",
+        image: "assets/images/ujjayi.png",
+        color: const Color(0xFF6C4DA8),
+      ),
+      CourseInfo(
+        title: "Surya Bhedana Pranayama",
+        image: "assets/images/suryabedhana.png",
+        color: const Color(0xFF5D3E9D),
+      ),
+      CourseInfo(
+        title: "Chandra Bhedana Pranayama",
+        image: "assets/images/chandrabedhana.png",
+        color: const Color(0xFF4E2F92),
+      ),
+      CourseInfo(
+        title: "Sheetali Pranayama",
+        image: "assets/images/sheetali.png",
+        color: const Color(0xFF3F2087),
+      ),
+      CourseInfo(
+        title: "Sheetkari Pranayama",
+        image: "assets/images/sheetkari.png",
+        color: const Color(0xFF30117C),
+      ),
+    ],
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Courses")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSection(
-              context,
-              title: "Breathing Techniques",
-              courses: breathingCourses,
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                "Courses",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4.0,
+                      color: Colors.black.withOpacity(0.5),
+                      offset: const Offset(1.0, 1.0),
+                    ),
+                  ],
+                ),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    "assets/images/banner.png",
+                    fit: BoxFit.cover,
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black,
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            _buildSection(
-              context,
-              title: "Pranayama",
-              courses: pranayamaCourses,
+            backgroundColor: const Color(0xff304674),
+            elevation: 0,
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.all(16.0),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                  final category = courseCategories.keys.elementAt(index);
+                  return _buildCourseCategory(context, category);
+                },
+                childCount: courseCategories.length,
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Builds a section with a header and a horizontal list of courses.
-  Widget _buildSection(
-      BuildContext context, {
-        required String title,
-        required List<Map<String, String>> courses,
-      }) {
+  Widget _buildCourseCategory(BuildContext context, String category) {
+    final courses = courseCategories[category]!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header with "View All" button.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(
-              onPressed: () {
-                // Navigate to the grid view page.
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CoursesGridPage(
-                      title: title,
-                      courses: courses,
-                      coursePages: coursePages,
-                    ),
-                  ),
-                );
-              },
-              child: const Text("View All", style: TextStyle(color: Colors.blue)),
+        SizedBox(height: category == courseCategories.keys.first ? 0 : 32),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Text(
+            category,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Color(0xff304674),
             ),
-          ],
-        ),
-        // Horizontal list of course cards.
-        SizedBox(
-          height: 140,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              return _buildCourseCard(context, course);
-            },
           ),
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16.0,
+            crossAxisSpacing: 16.0,
+            childAspectRatio: 0.9,
+          ),
+          itemCount: courses.length,
+          itemBuilder: (context, index) {
+            return _buildModernCourseCard(context, courses[index]);
+          },
         ),
       ],
     );
   }
 
-  /// Builds an individual course card.
-  Widget _buildCourseCard(BuildContext context, Map<String, String> course) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 12.0),
-      child: InkWell(
-        onTap: () {
-          final courseTitle = course["title"];
-          if (courseTitle != null && coursePages.containsKey(courseTitle)) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => coursePages[courseTitle]!()),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("No page found for $courseTitle")),
-            );
-          }
-        },
+  Widget _buildModernCourseCard(BuildContext context, CourseInfo course) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        if (coursePages.containsKey(course.title)) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => coursePages[course.title]!()),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                image: DecorationImage(
-                  image: AssetImage(course["image"]!),
-                  fit: BoxFit.cover,
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Stack(
+                  children: [
+                    Image.asset(
+                      course.image,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.3),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 5),
-            // Wrap title in a fixed-height container so spacing is equal
             Container(
-              width: 100,
-              height: 20, // Fixed height for the title area
-              alignment: Alignment.center,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                color: course.color,
+              ),
               child: Text(
-                course["title"]!,
-                style: const TextStyle(fontSize: 12),
-                textAlign: TextAlign.center,
-                maxLines: 1,
+                course.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

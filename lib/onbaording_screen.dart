@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:meditation_app/greeting/login_page.dart';
 import 'size_config.dart';
 import 'onbording_contents.dart';
- // Ensure this points to the correct file where RelaxScreen is defined
-import 'package:meditation_app/greeting/greet.dart';
 import 'package:meditation_app/relax.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,19 +13,24 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   late PageController _controller;
-
-  @override
-  void initState() {
-    _controller = PageController();
-    super.initState();
-  }
-
   int _currentPage = 0;
-  List<Color> colors = const [
+  final List<Color> colors = const [
     Color(0xffDAD3C8),
     Color(0xffFFE5DE),
     Color(0xffDCF6E6),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   AnimatedContainer _buildDots({int? index}) {
     return AnimatedContainer(
@@ -68,9 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Expanded(
                           child: Image.asset(contents[i].image),
                         ),
-                        SizedBox(
-                          height: (height >= 840) ? 60 : 30,
-                        ),
+                        SizedBox(height: (height >= 840) ? 60 : 30),
                         Text(
                           contents[i].title,
                           textAlign: TextAlign.center,
@@ -116,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>  NameInputPage(),
+                            builder: (context) => const LoginPage(),
                           ),
                         );
                       },
@@ -146,7 +148,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => RelaxScreen(),
+                                builder: (context) => const RelaxScreen(),
                               ),
                             );
                           },
@@ -173,7 +175,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => NameInputPage(),
+                                  builder: (context) => const LoginPage(),
                                 ),
                               );
                             }
@@ -186,7 +188,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                             elevation: 0,
                             padding: EdgeInsets.symmetric(
-                              horizontal: width <= 550 ? 30 : 30,
+                              horizontal: 30,
                               vertical: width <= 550 ? 20 : 25,
                             ),
                             textStyle: TextStyle(
