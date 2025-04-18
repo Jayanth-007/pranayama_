@@ -21,20 +21,18 @@ class BhramariScreen extends StatefulWidget {
 class _BhramariScreenState extends State<BhramariScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  // Using just_audio's AudioPlayer.
-  late AudioPlayer _exhalePlayer;
-  Timer? _exhaleTimer;
+  late AudioPlayer _hummingPlayer;
 
   bool isRunning = false;
-  bool isAudioPlaying = false;
+  bool isAudioEnabled = true;
   String breathingText = "Get Ready";
   int _currentRound = 0;
   String _currentPhase = "prepare";
 
-  // Path to your asset (assumed to be 8 seconds long).
-  final String _exhaleAssetPath = '../assets/music/humming_sound.mp3';
+  // Humming sound file path (place this in your assets/audio folder)
+  final String _hummingSoundPath = 'assets/music/hmmsound_.mp3';
 
-  // Phase boundary.
+  // Phase boundary
   late final double _inhaleFraction;
 
   @override
@@ -45,11 +43,9 @@ class _BhramariScreenState extends State<BhramariScreen>
     final totalDuration = widget.inhaleDuration + widget.exhaleDuration;
     _inhaleFraction = widget.inhaleDuration / totalDuration;
 
-    // Initialize the just_audio AudioPlayer.
-    _exhalePlayer = AudioPlayer();
-
-    // Set the audio source from asset.
-    _setAudioSource();
+    // Initialize the audio player
+    _hummingPlayer = AudioPlayer();
+    _loadAudio();
 
     _controller = AnimationController(
       duration: Duration(seconds: totalDuration),
@@ -60,12 +56,12 @@ class _BhramariScreenState extends State<BhramariScreen>
     _controller.addStatusListener(_handleAnimationStatus);
   }
 
-  Future<void> _setAudioSource() async {
+  Future<void> _loadAudio() async {
     try {
-      // Use AudioSource.asset for assets.
-      await _exhalePlayer.setAudioSource(AudioSource.asset(_exhaleAssetPath));
+      await _hummingPlayer.setAsset(_hummingSoundPath);
+      await _hummingPlayer.setVolume(1.0); // Always play at full volume
     } catch (e) {
-      debugPrint('Error setting audio source: $e');
+      debugPrint('Error loading audio: $e');
     }
   }
 
@@ -81,12 +77,35 @@ class _BhramariScreenState extends State<BhramariScreen>
 
     if (newPhase != _currentPhase) {
       _currentPhase = newPhase;
-      if (isAudioPlaying) {
-        _playPhaseSound(_currentPhase);
-      }
       setState(() {
         breathingText = _currentPhase.capitalize();
       });
+      _handlePhaseChange(_currentPhase);
+    }
+  }
+
+  void _handlePhaseChange(String phase) async {
+    if (phase == "inhale") {
+      await _stopHumming();
+    } else if (phase == "exhale" && isAudioEnabled) {
+      await _playHumming();
+    }
+  }
+
+  Future<void> _playHumming() async {
+    try {
+      await _hummingPlayer.seek(Duration.zero);
+      await _hummingPlayer.play();
+    } catch (e) {
+      debugPrint('Error playing humming: $e');
+    }
+  }
+
+  Future<void> _stopHumming() async {
+    try {
+      await _hummingPlayer.stop();
+    } catch (e) {
+      debugPrint('Error stopping humming: $e');
     }
   }
 
@@ -95,7 +114,6 @@ class _BhramariScreenState extends State<BhramariScreen>
       _currentRound++;
       if (_currentRound < widget.rounds) {
         _controller.reset();
-        // Small delay for smoother transition.
         await Future.delayed(const Duration(milliseconds: 2));
         if (isRunning) {
           _startBreathingCycle();
@@ -105,35 +123,8 @@ class _BhramariScreenState extends State<BhramariScreen>
           isRunning = false;
           breathingText = "Complete";
         });
-        await _stopAllAudio();
+        await _stopHumming();
       }
-    }
-  }
-
-  Future<void> _playPhaseSound(String phase) async {
-    if (phase == "inhale") {
-      // No audio during inhale.
-      _exhaleTimer?.cancel();
-      await _exhalePlayer.stop();
-    } else if (phase == "exhale") {
-      _exhaleTimer?.cancel();
-      await _exhalePlayer.stop();
-
-      // Calculate the speed factor:
-      // For an 8-second audio, to play in widget.exhaleDuration seconds:
-      double speedFactor = 8.0 / widget.exhaleDuration;
-
-      // Set the playback speed (time stretching with pitch correction on supported platforms).
-      await _exhalePlayer.setSpeed(speedFactor);
-
-      // Restart the audio from the beginning.
-      await _exhalePlayer.seek(Duration.zero);
-      await _exhalePlayer.play();
-
-      // Optionally, schedule a stop if needed after the desired duration.
-      _exhaleTimer = Timer(Duration(seconds: widget.exhaleDuration), () async {
-        await _exhalePlayer.stop();
-      });
     }
   }
 
@@ -143,15 +134,12 @@ class _BhramariScreenState extends State<BhramariScreen>
       _currentPhase = "inhale";
     });
     _controller.forward();
-    if (isAudioPlaying) {
-      _playPhaseSound("inhale");
-    }
   }
 
   Future<void> toggleBreathing() async {
     if (isRunning) {
       _controller.stop();
-      await _stopAllAudio();
+      await _stopHumming();
       setState(() {
         isRunning = false;
       });
@@ -166,17 +154,15 @@ class _BhramariScreenState extends State<BhramariScreen>
     }
   }
 
-  Future<void> _stopAllAudio() async {
-    _exhaleTimer?.cancel();
-    await _exhalePlayer.stop();
-  }
-
   Future<void> toggleAudio() async {
-    final newVolume = isAudioPlaying ? 0.0 : 1.0;
-    await _exhalePlayer.setVolume(newVolume);
     setState(() {
-      isAudioPlaying = !isAudioPlaying;
+      isAudioEnabled = !isAudioEnabled;
     });
+    if (!isAudioEnabled && _currentPhase == "exhale") {
+      await _stopHumming();
+    } else if (isAudioEnabled && _currentPhase == "exhale") {
+      await _playHumming();
+    }
   }
 
   Widget _buildTextDisplay(String text) {
@@ -260,7 +246,7 @@ class _BhramariScreenState extends State<BhramariScreen>
           _startBreathingCycle();
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.teal,
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           elevation: 10,
@@ -274,7 +260,7 @@ class _BhramariScreenState extends State<BhramariScreen>
       return ElevatedButton.icon(
         onPressed: toggleBreathing,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.teal,
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           elevation: 10,
@@ -291,8 +277,7 @@ class _BhramariScreenState extends State<BhramariScreen>
   @override
   void dispose() {
     _controller.dispose();
-    _exhaleTimer?.cancel();
-    _exhalePlayer.dispose();
+    _hummingPlayer.dispose();
     super.dispose();
   }
 
@@ -309,7 +294,7 @@ class _BhramariScreenState extends State<BhramariScreen>
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Colors.black,
         elevation: 10,
       ),
       body: Stack(
@@ -348,7 +333,7 @@ class _BhramariScreenState extends State<BhramariScreen>
             right: 15,
             child: IconButton(
               icon: Icon(
-                isAudioPlaying ? Icons.music_note : Icons.music_off,
+                isAudioEnabled ? Icons.volume_up : Icons.volume_off,
                 color: Colors.teal,
                 size: 36.0,
               ),
@@ -361,7 +346,6 @@ class _BhramariScreenState extends State<BhramariScreen>
   }
 }
 
-// Extension to capitalize strings.
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${this.substring(1)}";

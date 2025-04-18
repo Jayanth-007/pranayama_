@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,58 +13,63 @@ import 'package:meditation_app/Instruction/instruction_sheetali.dart';
 import 'package:meditation_app/Instruction/instruction_sheetkari.dart';
 import 'package:meditation_app/Instruction/instruction_surya.dart';
 import 'package:meditation_app/Instruction/instruction_ujjayi.dart';
-import 'package:meditation_app/Instruction/instruction_box.dart'; // For BoxBreathingPage
-import 'package:meditation_app/panic_breathing_page.dart'; // For PanicBreathingPage
+import 'package:meditation_app/Instruction/instruction_box.dart';
+import 'package:meditation_app/Panic_Breathing_Page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:meditation_app/progress/graph.dart';
 import 'profile/profile.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:meditation_app/courses_page.dart'; // Adjust the path as needed
+import 'package:meditation_app/courses_page.dart';
 
 class RelaxScreen extends StatefulWidget {
   const RelaxScreen({Key? key}) : super(key: key);
 
   @override
-  State<RelaxScreen> createState() => RelaxScreenState();
+  State<RelaxScreen> createState() => _RelaxScreenState();
 }
 
-class RelaxScreenState extends State<RelaxScreen> {
+class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
   String _userName = 'User';
   File? _profileImage;
-  String? _profileImageUrl; // URL from Google sign-in (if available)
-
-  // Screens for the BottomNavigationBar.
-  // For the Meditation tab, we pass username, profile image (File?), photoUrl, and pickImage callback.
-  late final List<Widget> _screens = [
-    MeditationScreen(
-      userName: _userName,
-      profileImage: _profileImage,
-      photoUrl: _profileImageUrl,
-      pickImage: _pickImage,
-    ),
-    CoursesPage(),
-    ProgressScreen(),
-    MeditationProfile(),
-  ];
+  String? _profileImageUrl;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.forward();
     _loadUserData();
   }
 
   @override
   void dispose() {
+    _controller.dispose();
     super.dispose();
   }
 
-  // Fetch the user's name and photo URL from Firestore and FirebaseAuth.
+  final List<Widget> _screens = [
+    const MeditationScreen(),
+    CoursesPage(),
+    ProgressScreen(),
+    MeditationProfile(),
+  ];
+
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      // Load the user's name from Firestore.
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -71,7 +77,6 @@ class RelaxScreenState extends State<RelaxScreen> {
       if (doc.exists && doc.data() != null) {
         setState(() {
           _userName = doc.get('name') ?? 'User';
-          // Also, get the photo URL from FirebaseAuth if available.
           _profileImageUrl = user.photoURL;
           _screens[0] = MeditationScreen(
             userName: _userName,
@@ -90,7 +95,6 @@ class RelaxScreenState extends State<RelaxScreen> {
     if (image != null) {
       setState(() {
         _profileImage = File(image.path);
-        // Once the user picks an image, update the MeditationScreen.
         _screens[0] = MeditationScreen(
           userName: _userName,
           profileImage: _profileImage,
@@ -101,468 +105,500 @@ class RelaxScreenState extends State<RelaxScreen> {
     }
   }
 
-  // Navigate to Panic Breathing Page.
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+      _controller.reset();
+      _controller.forward();
+    });
+  }
+
   void _handlePanicButton() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const PanicBreathingPage()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const PanicBreathingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The Meditation tab now has its header built into the screen.
-      body: SafeArea(child: _screens[_currentIndex]),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        backgroundColor: const Color(0xff304674), // Accent
-        selectedItemColor: const Color(0xff98bad5), // Primary
-        unselectedItemColor: const Color(0xffc6d3e3), // Secondary
-        showSelectedLabels: true,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.spa),
-            label: 'Meditation',
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _screens[_currentIndex],
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(position: _slideAnimation, child: child),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          child: BottomAppBar(
+            color: Colors.white,
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 8.0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.spa,
+                        color: _currentIndex == 0 ? Colors.teal : Colors.grey.shade400,
+                        size: 28),
+                    onPressed: () => _onItemTapped(0),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.school,
+                        color: _currentIndex == 1 ? Colors.teal : Colors.grey.shade400,
+                        size: 28),
+                    onPressed: () => _onItemTapped(1),
+                  ),
+                  const SizedBox(width: 48),
+                  IconButton(
+                    icon: Icon(Icons.bar_chart,
+                        color: _currentIndex == 2 ? Colors.teal : Colors.grey.shade400,
+                        size: 28),
+                    onPressed: () => _onItemTapped(2),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.person,
+                        color: _currentIndex == 3 ? Colors.teal : Colors.grey.shade400,
+                        size: 28),
+                    onPressed: () => _onItemTapped(3),
+                  ),
+                ],
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder),
-            label: 'Courses',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Progress',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handlePanicButton,
-        backgroundColor: const Color(0xff98bad5), // Primary
-        child: const Icon(Icons.warning, color: Colors.white),
+        backgroundColor: Colors.teal,
+        elevation: 10,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(60),
+          side: const BorderSide(color: Colors.white, width: 3),
+        ),
+        child: const Icon(Icons.emergency, color: Colors.white, size: 35),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
 
-// MeditationScreen now uses a NestedScrollView with a SliverAppBar that integrates the
-// profile picture (as a clickable avatar) into the collapsed title.
 class MeditationScreen extends StatefulWidget {
   final String userName;
   final File? profileImage;
-  final String? photoUrl; // URL from Google sign-in
-  final Future<void> Function() pickImage;
+  final String? photoUrl;
+  final Function()? pickImage;
 
   const MeditationScreen({
     Key? key,
-    required this.userName,
-    required this.profileImage,
-    required this.photoUrl,
-    required this.pickImage,
+    this.userName = 'User',
+    this.profileImage,
+    this.photoUrl,
+    this.pickImage,
   }) : super(key: key);
 
   @override
   _MeditationScreenState createState() => _MeditationScreenState();
 }
 
-class _MeditationScreenState extends State<MeditationScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
+class _MeditationScreenState extends State<MeditationScreen> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      ),
-    );
-    _animationController.forward();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    });
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return NestedScrollView(
-      // The SliverAppBar builds the header.
-      headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-        return [
+    final double appBarHeight = MediaQuery.of(context).size.height * 0.3;
+    final greeting = _getGreeting();
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
           SliverAppBar(
-            expandedHeight: 180.0,
+            expandedHeight: appBarHeight,
             pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
-              // When collapsed, the title shows a row with the avatar and greeting.
-              title: Row(
+            stretch: true,
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final double top = constraints.biggest.height;
+                final bool showTitle = _scrollOffset > appBarHeight - kToolbarHeight - 15;
+
+                return FlexibleSpaceBar(
+                  title: showTitle
+                      ? Text(
+                    '',
+                    style: TextStyle(
+                      color: Color(0xFF1A2C50),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withOpacity(0.8),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                  )
+                      : null,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/images/ban.png',
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Color(0xFF1A2C50).withOpacity(0.4),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (!showTitle)
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 34,
+                                  backgroundImage: widget.profileImage != null
+                                      ? FileImage(widget.profileImage!)
+                                      : (widget.photoUrl != null
+                                      ? NetworkImage(widget.photoUrl!)
+                                      : null) as ImageProvider?,
+                                  backgroundColor: Colors.white,
+                                  child: (widget.profileImage == null && widget.photoUrl == null)
+                                      ? Icon(Icons.person, size: 30, color: Color(0xFF1A2C50))
+                                      : null,
+                                ),
+                                const SizedBox(width: 16),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      greeting,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    Text(
+                                      widget.userName,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GestureDetector(
-                    onTap: widget.pickImage,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: const Color(0xffc6d3e3), // Secondary
-                      backgroundImage: widget.profileImage != null
-                          ? FileImage(widget.profileImage!)
-                          : (widget.photoUrl != null
-                          ? NetworkImage(widget.photoUrl!)
-                          : null) as ImageProvider<Object>?,
-                      child: (widget.profileImage == null && widget.photoUrl == null)
-                          ? const Icon(
-                        Icons.add_a_photo,
-                        size: 16,
-                        color: Colors.blueGrey,
-                      )
-                          : null,
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('MEDITATION'),
+                  const SizedBox(height: 16),
+                  _buildBreathingGrid([
+                    _BreathingItem(
+                      "Abdominal\nBreathing",
+                      ['assets/images/13.png'],
+                      [Colors.teal[800]!, Colors.teal[400]!],
+                      AbdominalBreathingPage(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Hello, ${widget.userName}!',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xff304674), // Accent
+                    _BreathingItem(
+                      "Chest\nBreathing",
+                      ['assets/images/15.png'],
+                      [Colors.teal[400]!, Colors.teal[600]!],
+                      ChestBreathingPage(),
                     ),
-                  ),
+                    _BreathingItem(
+                      "Complete\nBreathing",
+                      ['assets/images/17.png'],
+                      [Colors.teal[700]!, Colors.teal[300]!],
+                      CompleteBreathingPage(),
+                    ),
+                  ]),
+                  const SizedBox(height: 30),
+                  _buildSectionTitle('PRANAYAMA'),
+                  const SizedBox(height: 16),
+                  _buildBreathingGrid([
+                    _BreathingItem(
+                      "Bhramari\nPranayama",
+                      ['assets/images/21.png'],
+                      [Colors.teal[800]!, Colors.teal[300]!],
+                      BhramariBreathingPage(),
+                    ),
+                    _BreathingItem(
+                      "Nadi\nShodhana",
+                      ['assets/images/1.png'],
+                      [Colors.teal[500]!, Colors.teal[200]!],
+                      NadiShodhanaPage(),
+                    ),
+                    _BreathingItem(
+                      "Ujjayi\nPranayama",
+                      ['assets/images/7.png'],
+                      [Colors.teal[300]!, Colors.teal[700]!],
+                      UjjayiPranayamaPage(),
+                    ),
+                    _BreathingItem(
+                      "Surya\nBhedana",
+                      ['assets/images/3.png'],
+                      [Colors.teal[200]!, Colors.teal[500]!],
+                      SuryaBhedanaPranayamaPage(),
+                    ),
+                    _BreathingItem(
+                      "Chandra\nBhedana",
+                      ['assets/images/5.png'],
+                      [Colors.teal[800]!, Colors.teal[400]!],
+                      ChandraBhedanaPranayamaPage(),
+                    ),
+                    _BreathingItem(
+                      "Sheetali\nPranayama",
+                      ['assets/images/13.png'],
+                      [Colors.teal[300]!, Colors.teal[600]!],
+                      SheetaliPranayamaPage(),
+                    ),
+                    _BreathingItem(
+                      "Sheetkari\nPranayama",
+                      ['assets/images/9.png'],
+                      [Colors.teal[400]!, Colors.teal[800]!],
+                      SheetkariPranayamaPage(),
+                    ),
+                  ]),
+                  const SizedBox(height: 30),
+                  _buildSectionTitle('ADVANCED'),
+                  const SizedBox(height: 16),
+                  _buildBreathingGrid([
+                    _BreathingItem(
+                      "Box\nBreathing",
+                      ['assets/images/19.png'],
+                      [Colors.teal[700]!, Colors.teal[300]!],
+                      BoxBreathingPage(),
+                    ),
+                  ]),
+                  const SizedBox(height: 40),
                 ],
-              ),
-              centerTitle: true,
-              // Replace the blue gradient with your image background
-              background: Image.asset(
-                'assets/images/blossoms.png', // Your image asset path
-                fit: BoxFit.cover,
               ),
             ),
           ),
-        ];
-      },
-      // The body contains your original Meditation content.
-      body: SlideTransition(
-        position: _slideAnimation,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(15.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 5),
-              const SizedBox(height: 20),
-              const Text(
-                "MEDITATION",
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff304674), // Accent
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                padding: const EdgeInsets.all(4.0),
-                mainAxisSpacing: 16.0,
-                crossAxisSpacing: 10.0,
-                children: [
-                  BreathingBox(
-                    label: "Abdominal Breathing",
-                    // Gradient: Primary -> Secondary
-                    gradientColors: [
-                      const Color(0xff98bad5),
-                      const Color(0xffc6d3e3),
-                    ],
-                    imagePath: 'assets/images/2.gif',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AbdominalBreathingPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  BreathingBox(
-                    label: "Chest Breathing",
-                    // Gradient: Background -> Light Accent
-                    gradientColors: [
-                      const Color(0xffd8e1e8),
-                      const Color(0xffb2cbde),
-                    ],
-                    imagePath: 'assets/images/1.gif',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChestBreathingPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  BreathingBox(
-                    label: "Complete Breathing",
-                    // Gradient: Accent -> Primary
-                    gradientColors: [
-                      const Color(0xff304674),
-                      const Color(0xff98bad5),
-                    ],
-                    imagePath: 'assets/images/3.gif',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CompleteBreathingPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                "PRANAYAMA",
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff304674), // Accent
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // Grid view for Pranayama boxes.
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 7,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16.0,
-                  crossAxisSpacing: 10.0,
-                  childAspectRatio: 1.0,
-                ),
-                itemBuilder: (context, index) {
-                  final List<String> boxLabels = [
-                    "Bhramari Pranayama",
-                    "Nadi shodhana Pranayama",
-                    "Ujjayi Pranayama",
-                    "Surya Bhedana Pranayama",
-                    "Chandra Bhedana Pranayama",
-                    "Sheetali Pranayama",
-                    "Sheetkari Pranayama",
-                  ];
+        ],
+      ),
+    );
+  }
 
-                  final List<String> backgroundImages = [
-                    'assets/images/4.gif',
-                    'assets/images/5.gif',
-                    'assets/images/6.gif',
-                    'assets/images/7.gif',
-                    'assets/images/8.gif',
-                    'assets/images/9.gif',
-                    'assets/images/10.gif',
-                  ];
-
-                  // Updated gradients based on the new color theme.
-                  final List<List<Color>> gradients = [
-                    // Bhramari Pranayama: Accent -> Primary
-                    [const Color(0xff304674), const Color(0xff98bad5)],
-                    // Nadi shodhana Pranayama: Secondary -> Light Accent
-                    [const Color(0xffc6d3e3), const Color(0xffb2cbde)],
-                    // Ujjayi Pranayama: Primary -> Accent
-                    [const Color(0xff98bad5), const Color(0xff304674)],
-                    // Surya Bhedana Pranayama: Light Accent -> Primary
-                    [const Color(0xffb2cbde), const Color(0xff98bad5)],
-                    // Chandra Bhedana Pranayama: Accent -> Light Accent
-                    [const Color(0xff304674), const Color(0xffb2cbde)],
-                    // Sheetali Pranayama: Primary -> Secondary
-                    [const Color(0xff98bad5), const Color(0xffc6d3e3)],
-                    // Sheetkari Pranayama: Secondary -> Accent
-                    [const Color(0xffc6d3e3), const Color(0xff304674)],
-                  ];
-
-                  return BreathingBox(
-                    label: boxLabels[index],
-                    gradientColors: gradients[index % gradients.length],
-                    imagePath: backgroundImages[index],
-                    onTap: () {
-                      if (boxLabels[index] == "Bhramari Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BhramariBreathingPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Nadi shodhana Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => NadiShodhanaPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Ujjayi Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => UjjayiPranayamaPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Surya Bhedana Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SuryaBhedanaPranayamaPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Chandra Bhedana Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChandraBhedanaPranayamaPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Sheetali Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SheetaliPranayamaPage(),
-                          ),
-                        );
-                      } else if (boxLabels[index] == "Sheetkari Pranayama") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SheetkariPranayamaPage(),
-                          ),
-                        );
-                      }
-                    },
-                  );
-                },
-              ),
-              // New Section: ADVANCED BREATHING with Box Breathing course
-              const SizedBox(height: 40),
-              const Text(
-                "ADVANCED BREATHING",
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff304674), // Accent
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                padding: const EdgeInsets.all(4.0),
-                mainAxisSpacing: 16.0,
-                crossAxisSpacing: 10.0,
-                children: [
-                  BreathingBox(
-                    label: "Box Breathing",
-                    // Gradient: Accent -> Primary
-                    gradientColors: [
-                      const Color(0xff304674),
-                      const Color(0xff98bad5),
-                    ],
-                    imagePath: 'assets/images/boxbreathing.jpeg',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BoxBreathingPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          color: Colors.teal[800],
+          letterSpacing: 1.5,
+          fontFamily: 'Poppins',
+          shadows: [
+            Shadow(
+              color: Colors.white.withOpacity(0.8),
+              blurRadius: 10,
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildBreathingGrid(List<_BreathingItem> items) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16.0,
+        crossAxisSpacing: 16.0,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return _BreathingCard(item: items[index]);
+      },
+    );
+  }
 }
 
-class BreathingBox extends StatelessWidget {
-  final String label;
+class _BreathingItem {
+  final String title;
+  final List<String> imagePaths;
   final List<Color> gradientColors;
-  final String imagePath;
-  final VoidCallback onTap;
+  final Widget destinationPage;
 
-  const BreathingBox({
-    Key? key,
-    required this.label,
-    required this.gradientColors,
-    required this.imagePath,
-    required this.onTap,
-  }) : super(key: key);
+  _BreathingItem(this.title, this.imagePaths, this.gradientColors, this.destinationPage);
+}
+
+class _BreathingCard extends StatelessWidget {
+  final _BreathingItem item;
+
+  const _BreathingCard({Key? key, required this.item}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => item.destinationPage),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradientColors),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
             BoxShadow(
-              color: Colors.white60,
-              blurRadius: 8.0,
-              offset: Offset(2, 4),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                height: double.infinity,
-                width: double.infinity,
+              // Background image with scale effect
+              Positioned.fill(
+                child: Image.asset(
+                  item.imagePaths[0],
+                  fit: BoxFit.cover,
+                ),
               ),
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xff304674), // Accent for text contrast
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    backgroundColor: Colors.white54,
+
+              // Gradient overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.4, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      item.gradientColors[1].withOpacity(0.8),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 3,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: item.gradientColors[0],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

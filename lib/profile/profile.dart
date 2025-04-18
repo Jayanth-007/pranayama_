@@ -11,10 +11,10 @@ void main() {
     home: MeditationApp(),
     theme: ThemeData(
       fontFamily: 'Poppins',
-      primaryColor: const Color(0xff98bad5),
-      scaffoldBackgroundColor: const Color(0xffd8e1e8),
+      primaryColor: const Color(0xffA8DADC), // Pastel blue
+      scaffoldBackgroundColor: const Color(0xffF1FAEE), // Pastel cream
       appBarTheme: const AppBarTheme(
-        color: Color(0xff304674), // Accent
+        color: Color(0xff457B9D), // Pastel dark blue
         iconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
       ),
@@ -28,7 +28,7 @@ class MeditationApp extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Meditation'),
-        backgroundColor: const Color(0xff304674),
+        backgroundColor: const Color(0xff457B9D),
       ),
       body: MeditationProfile(),
     );
@@ -86,30 +86,34 @@ class _MeditationProfileState extends State<MeditationProfile> {
             SizedBox(height: 20.0),
             _buildMeditationStats(),
             SizedBox(height: 20.0),
+            Divider(color: const Color(0xff457B9D).withOpacity(0.3)),
+            SizedBox(height: 20.0),
             Text(
               'Recent Achievements',
               style: TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xff304674), // Accent
+                color: const Color(0xff457B9D), // Pastel dark blue
               ),
             ),
             SizedBox(height: 10.0),
             _buildAchievementList(),
             SizedBox(height: 20.0),
-            // Favorites Section
+            Divider(color: const Color(0xff457B9D).withOpacity(0.3)),
+            SizedBox(height: 20.0),
             Text(
               'Favorites',
               style: TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xff304674),
+                color: const Color(0xff457B9D), // Pastel dark blue
               ),
             ),
             ListTile(
+              leading: Icon(Icons.favorite, color: const Color(0xffE63946)), // Pastel red
               title: Text('View Favorite Courses',
-                  style: TextStyle(color: const Color(0xff304674))),
-              trailing: Icon(Icons.arrow_forward_ios, color: const Color(0xff304674)),
+                  style: TextStyle(color: const Color(0xff457B9D))),
+              trailing: Icon(Icons.arrow_forward_ios, color: const Color(0xff457B9D)),
               onTap: () {
                 Navigator.push(
                   context,
@@ -128,7 +132,8 @@ class _MeditationProfileState extends State<MeditationProfile> {
       children: [
         CircleAvatar(
           radius: 50.0,
-          backgroundImage: AssetImage('assets/user_avatar.png'),
+          backgroundColor: const Color(0xffA8DADC), // Pastel blue
+          child: Icon(Icons.person, size: 50, color: const Color(0xff457B9D)), // Pastel dark blue
         ),
         SizedBox(width: 20.0),
         Expanded(
@@ -143,13 +148,13 @@ class _MeditationProfileState extends State<MeditationProfile> {
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xff304674),
+                        color: const Color(0xff457B9D), // Pastel dark blue
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.logout, size: 20, color: const Color(0xff304674)),
+                    icon: Icon(Icons.logout, size: 20, color: const Color(0xff457B9D)),
                     onPressed: _logout,
                   ),
                 ],
@@ -158,7 +163,7 @@ class _MeditationProfileState extends State<MeditationProfile> {
                 'Meditation Enthusiast',
                 style: TextStyle(
                   fontSize: 14.0,
-                  color: const Color(0xffc6d3e3), // Secondary
+                  color: const Color(0xffA8DADC).withOpacity(0.8), // Pastel blue
                 ),
               ),
             ],
@@ -185,8 +190,8 @@ class _MeditationProfileState extends State<MeditationProfile> {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xff304674), // Accent
-            Color(0xff98bad5), // Primary
+            Color(0xffA8DADC), // Pastel blue
+            Color(0xffF1FAEE), // Pastel cream
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -201,17 +206,21 @@ class _MeditationProfileState extends State<MeditationProfile> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // Ensures the Column wraps content properly
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 14.0, color: Colors.white70),
+            style: TextStyle(
+              fontSize: 14.0,
+              color: const Color(0xff457B9D).withOpacity(0.8),
+            ),
           ),
-          SizedBox(height: 5.0),
+          const SizedBox(height: 5.0), // Added const for optimization
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16.0,
-              color: Colors.white,
+              color: Color(0xff457B9D), // Pastel dark blue
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -220,11 +229,12 @@ class _MeditationProfileState extends State<MeditationProfile> {
     );
   }
 
+
   Widget _buildAchievementList() {
     // Implement logic to fetch or display achievement data here.
     return Text(
       'No achievements unlocked yet. Keep meditating!',
-      style: TextStyle(color: const Color(0xff304674)),
+      style: TextStyle(color: const Color(0xff457B9D).withOpacity(0.8)),
     );
   }
 }
@@ -302,7 +312,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Favorite Courses'),
-        backgroundColor: const Color(0xff304674),
+        backgroundColor: const Color(0xff457B9D),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -310,7 +320,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
           ? Center(
         child: Text(
           'No favorite courses added yet.',
-          style: TextStyle(color: const Color(0xff304674)),
+          style: TextStyle(color: const Color(0xff457B9D)),
         ),
       )
           : ListView.builder(
@@ -318,8 +328,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         itemBuilder: (context, index) {
           String course = favoriteCourses[index];
           return ListTile(
-            title: Text(course, style: TextStyle(color: const Color(0xff304674))),
-            trailing: Icon(Icons.arrow_forward_ios, color: const Color(0xff304674)),
+            leading: Icon(Icons.spa, color: const Color(0xffA8DADC)), // Pastel blue
+            title: Text(course, style: TextStyle(color: const Color(0xff457B9D))),
+            trailing: Icon(Icons.arrow_forward_ios, color: const Color(0xff457B9D)),
             onTap: () {
               if (coursePages.containsKey(course)) {
                 Navigator.push(
@@ -347,12 +358,12 @@ class CoursePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: const Color(0xff304674),
+        backgroundColor: const Color(0xff457B9D),
       ),
       body: Center(
         child: Text(
           "This is the page for $title",
-          style: TextStyle(color: const Color(0xff304674)),
+          style: TextStyle(color: const Color(0xff457B9D)),
         ),
       ),
     );

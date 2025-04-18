@@ -299,6 +299,42 @@ class _BilateralScreenState extends State<BilateralScreen>
     }
   }
 
+  Widget _buildTimeProgressBar() {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        double progress = _controller.value;
+        int totalSeconds = _controller.duration?.inSeconds ?? 1;
+        int remainingSeconds = totalSeconds - (progress * totalSeconds).toInt();
+        int minutes = remainingSeconds ~/ 60;
+        int seconds = remainingSeconds % 60;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LinearProgressIndicator(
+                value: 1 - progress,
+                backgroundColor: Colors.grey[800],
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -312,16 +348,19 @@ class _BilateralScreenState extends State<BilateralScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Abdominal Breathing",
+          "Breathing",
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
-        elevation: 10,
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: Stack(
         children: [
@@ -342,14 +381,8 @@ class _BilateralScreenState extends State<BilateralScreen>
                   _buildBreathingImage(),
                   const SizedBox(height: 50),
                   _buildControlButtons(),
-                  Text(
-                    "Round: ${_currentRound < widget.rounds ? _currentRound + 1 : widget.rounds} / ${widget.rounds}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  const SizedBox(height: 20),
+                  _buildTimeProgressBar(),
                 ],
               ),
             ),

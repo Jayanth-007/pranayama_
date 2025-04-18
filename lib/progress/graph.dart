@@ -11,7 +11,6 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   DateTime? _selectedDate;
-  // Daily usage data is stored with keys in "YYYY-MM-DD" format.
   Map<String, Map<String, dynamic>> usageData = {};
 
   Map<DateTime, List<Map<String, dynamic>>> get markedDates {
@@ -27,11 +26,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     _loadUsageData();
   }
 
-  /// Fetch usage data from SharedPreferences.
-  /// It assumes that a list of days used is stored under "days_used_<uid>" and for each day
-  /// there is a key "usage_<uid>_YYYY-MM-DD" that stores the usage time in seconds.
   Future<void> _loadUsageData() async {
-    // Ensure that there is a logged in user.
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     final uid = user.uid;
@@ -42,25 +37,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
     Map<String, Map<String, dynamic>> fetchedData = {};
 
     for (var day in daysUsed) {
-      // Retrieve the usage seconds for that day.
       final dailyUsageKey = "usage_${uid}_$day";
       int seconds = prefs.getInt(dailyUsageKey) ?? 0;
-      // Convert seconds to hours (as a double).
       double hours = seconds / 3600.0;
-      // Here, we assume the activity is "Pranayama" as before.
       fetchedData[day] = {"hours": hours, "activity": "Pranayama"};
     }
 
-    // Update state with the fetched data.
     setState(() {
       usageData = fetchedData;
     });
   }
 
-  /// Calculate the maximum continuous streak (in days) based on usageData.
   int _calculateMaxStreak() {
     if (usageData.isEmpty) return 0;
-    // Convert keys (date strings) into DateTime objects.
     List<DateTime> dates = usageData.keys.map((key) => DateTime.parse(key)).toList();
     dates.sort((a, b) => a.compareTo(b));
 
@@ -68,7 +57,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     int currentStreak = 1;
 
     for (int i = 1; i < dates.length; i++) {
-      // Check if the difference between consecutive days is exactly one day.
       if (dates[i].difference(dates[i - 1]).inDays == 1) {
         currentStreak++;
         if (currentStreak > maxStreak) maxStreak = currentStreak;
@@ -82,63 +70,76 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate total hours from the fetched usage data.
     final totalHours = usageData.values.fold<double>(
       0,
           (sum, item) => sum + (item["hours"] as double),
     );
 
-    // Convert the usageData map to a list of entries and sort by date.
     final dataList = usageData.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
     return Scaffold(
-      backgroundColor: const Color(0xffd8e1e8), // Background/Neutral
-      // Removed the AppBar to eliminate the top heading and refresh icon.
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            SizedBox(height: 20),
-            _buildStatsSection(totalHours),
-            SizedBox(height: 20),
-            _buildCalendarSection(),
-            SizedBox(height: 20),
-            if (_selectedDate != null) _buildSelectedDateInfo(),
-            SizedBox(height: 20),
-            _buildGraphSection(dataList),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 30, horizontal: 60),
-      decoration: BoxDecoration(
-        color: const Color(0xff304674), // Accent
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(30),
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            "Progress Screen",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+      backgroundColor: Colors.grey[50],
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 180,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF304674),
+                      Color(0xFF536AB7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Your Progress",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Track your consistency and growth",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-          SizedBox(height: 10),
-          Text(
-            "Track your yoga journey and consistency",
-            style: TextStyle(fontSize: 16, color: Colors.white70),
-            textAlign: TextAlign.center,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                children: [
+                  _buildStatsSection(totalHours),
+                  SizedBox(height: 24),
+                  _buildCalendarSection(),
+                  SizedBox(height: 24),
+                  if (_selectedDate != null) _buildSelectedDateInfo(),
+                  SizedBox(height: 24),
+                  _buildGraphSection(dataList),
+                  SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -148,68 +149,100 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget _buildStatsSection(double totalHours) {
     int maxStreak = _calculateMaxStreak();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatCard("${usageData.length}", "Days Used"),
-          _buildStatCard("$maxStreak", "Max Streak"),
-          _buildStatCard("${totalHours.toStringAsFixed(1)} hrs", "Total Hours"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String value, String label) {
     return Container(
-      width: 110,
-      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xff304674), // Accent
-            Color(0xff98bad5), // Primary
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 8,
+            blurRadius: 10,
             offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      padding: EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text(
-            value,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          SizedBox(height: 5),
-          Text(
-            label,
-            style: TextStyle(fontSize: 14, color: Colors.white70),
-          ),
+          _buildStatItem(Icons.calendar_today, "${usageData.length}", "Days"),
+          _buildStatItem(Icons.timeline, "$maxStreak", "Max Streak"),
+          _buildStatItem(Icons.access_time, "${totalHours.toStringAsFixed(1)}", "Hours"),
         ],
       ),
     );
   }
 
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF98BAD5),
+                Color(0xFF304674),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+        SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800],
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCalendarSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Calendar",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
+          Row(
+            children: [
+              Icon(Icons.calendar_month, color: Color(0xFF304674)),
+              SizedBox(width: 8),
+              Text(
+                "Activity Calendar",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 16),
           TableCalendar(
             firstDay: DateTime(2025, 1, 1),
             lastDay: DateTime(2025, 12, 31),
@@ -222,38 +255,55 @@ class _ProgressScreenState extends State<ProgressScreen> {
             },
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
-                color: const Color(0xff98bad5), // Primary
+                color: Color(0xFF304674),
                 shape: BoxShape.circle,
               ),
-              todayTextStyle: TextStyle(color: Colors.white),
+              todayDecoration: BoxDecoration(
+                color: Color(0xFF98BAD5),
+                shape: BoxShape.circle,
+              ),
               markerDecoration: BoxDecoration(
-                color: const Color(0xff98bad5), // Primary
+                color: Color(0xFF304674),
                 shape: BoxShape.circle,
               ),
+              defaultTextStyle: TextStyle(color: Colors.grey[800]),
+              weekendTextStyle: TextStyle(color: Colors.grey[800]),
+            ),
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: TextStyle(
+                color: Colors.grey[800],
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFF304674)),
+              rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFF304674)),
+            ),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(color: Colors.grey[600]),
+              weekendStyle: TextStyle(color: Colors.grey[600]),
             ),
             eventLoader: (date) => markedDates[date] ?? [],
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, date, focusedDay) {
-                // Format the date to match the keys in usageData ("YYYY-MM-DD")
                 String formattedDate =
                     "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-                // If usage data exists for this day, highlight it with the blue accent.
                 if (usageData.containsKey(formattedDate)) {
                   return Container(
-                    margin: const EdgeInsets.all(6.0),
+                    margin: const EdgeInsets.all(4.0),
                     decoration: BoxDecoration(
-                      color: const Color(0xff304674),
+                      color: Color(0xFF304674).withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         '${date.day}',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Color(0xFF304674), fontWeight: FontWeight.bold),
                       ),
                     ),
                   );
                 }
-                // Return null to use the default day cell if there's no usage data.
                 return null;
               },
             ),
@@ -267,21 +317,78 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final selectedDateStr = _selectedDate!.toLocal().toString().split(' ')[0];
     final data = usageData[selectedDateStr];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Data for $selectedDateStr:",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFF304674)),
+              SizedBox(width: 8),
+              Text(
+                "Selected Day Summary",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
-          Text(
-            data != null
-                ? "${data['hours'].toStringAsFixed(1)} hours of ${data['activity']}."
-                : "No data available for this day.",
-            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Color(0xFFF5F9FC),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF304674),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      data != null
+                          ? "${data['hours'].toStringAsFixed(1)} hours of ${data['activity']}"
+                          : "No activity recorded",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -289,20 +396,116 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _buildGraphSection(List<MapEntry<String, Map<String, dynamic>>> dataList) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Consistency Graph",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff304674)),
+          Row(
+            children: [
+              Icon(Icons.show_chart, color: Color(0xFF304674)),
+              SizedBox(width: 8),
+              Text(
+                "Consistency Over Time",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 16),
           Container(
             height: 200,
             child: LineChart(
               LineChartData(
+                minX: 0,
+                maxX: dataList.isNotEmpty ? dataList.length - 1 : 1,
+                minY: 0,
+                maxY: dataList.isNotEmpty
+                    ? (dataList.map((e) => e.value['hours'] as double).reduce((a, b) => a > b ? a : b) + 1)
+                    : 5, // ✅ Fixed: missing closing parenthesis
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 1,
+                  verticalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey[200],
+                      strokeWidth: 1,
+                    );
+                  },
+                  getDrawingVerticalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey[200],
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: Colors.grey[300]!, width: 1),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 && value.toInt() < dataList.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              dataList[value.toInt()].key.split("-")[2],
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          );
+                        }
+                        return Container();
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
                 lineBarsData: [
                   LineChartBarData(
                     spots: List.generate(
@@ -313,60 +516,33 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       ),
                     ),
                     isCurved: true,
-                    color: const Color(0xff304674), // Accent
-                    barWidth: 4,
+                    color: Color(0xFF304674),
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Color(0xFF304674),
+                          strokeColor: Colors.white,
+                          strokeWidth: 2,
+                        );
+                      },
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: const Color(0xff304674).withOpacity(0.3), // Accent with opacity
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF304674).withOpacity(0.3),
+                          Color(0xFF304674).withOpacity(0.1),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
-                    dotData: FlDotData(show: true),
                   ),
                 ],
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: TextStyle(fontSize: 12),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (value, meta) {
-                        int index = value.toInt();
-                        if (index >= 0 && index < dataList.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              dataList[index].key.split("-")[2],
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          );
-                        }
-                        return Container();
-                      },
-                    ),
-                  ),
-                ),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                      return touchedBarSpots.map((barSpot) {
-                        return LineTooltipItem(
-                          '${dataList[barSpot.spotIndex].key}\n${(barSpot.y).toStringAsFixed(1)} hrs',
-                          TextStyle(color: Colors.white),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
               ),
             ),
           ),
@@ -374,8 +550,4 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ),
     );
   }
-}
-
-extension MapConversion<K, V> on Iterable<MapEntry<K, V>> {
-  Map<K, V> toMap() => {for (var e in this) e.key: e.value};
-}
+  }
