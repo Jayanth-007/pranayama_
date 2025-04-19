@@ -6,6 +6,7 @@ import 'package:meditation_app/courses/bhramari_pranayama_page.dart';
 import 'package:meditation_app/greeting/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'contributers.dart';
 
 
 void main() {
@@ -194,6 +195,53 @@ class _MeditationProfileState extends State<MeditationProfile> {
                           Expanded(
                             child: Text(
                               'About Us',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xff457B9D),
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xff457B9D)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ContributorsPage()),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                margin: EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.asset(
+                        'assets/images/contri.jpg', // <-- Replace with your image if needed
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: const Color(0xff457B9D)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Contributers',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
