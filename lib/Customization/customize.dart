@@ -14,58 +14,60 @@ Future<Map<String, int>?> showCustomizationDialog(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 16),
-            StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  children: [
-                    _buildSlider(
-                      context,
-                      label: 'Inhale',
-                      value: inhale,
-                      onChanged: (value) => setState(() => inhale = value),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSlider(
-                      context,
-                      label: 'Exhale',
-                      value: exhale,
-                      onChanged: (value) => setState(() => exhale = value),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSlider(
-                      context,
-                      label: 'Hold',
-                      value: hold,
-                      onChanged: (value) => setState(() => hold = value),
-                    ),
-                    const SizedBox(height: 32),
-                    _buildSaveButton(context, inhale, exhale, hold),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              },
+      builder: (context) {
+        return SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-          ],
-        ),
-      );
-    },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 16),
+                  StatefulBuilder(
+                    builder: (context, setState) {
+                      return Column(
+                        children: [
+                          _buildSlider(
+                            context,
+                            label: 'Inhale',
+                            value: inhale,
+                            onChanged: (value) => setState(() => inhale = value),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildSlider(
+                            context,
+                            label: 'Exhale',
+                            value: exhale,
+                            onChanged: (value) => setState(() => exhale = value),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildSlider(
+                            context,
+                            label: 'Hold',
+                            value: hold,
+                            onChanged: (value) => setState(() => hold = value),
+                          ),
+                          const SizedBox(height: 32),
+                          _buildSaveButton(context, inhale, exhale, hold),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
   );
 }
 
@@ -91,6 +93,10 @@ Widget _buildSlider(
       required double value,
       required ValueChanged<double> onChanged,
     }) {
+  final bool isHold = label == 'Hold';
+  final double minValue = isHold ? 0 : 1;
+  final int divisions = isHold ? 10 : 9;
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -124,9 +130,9 @@ Widget _buildSlider(
       const SizedBox(height: 8),
       Slider(
         value: value,
-        min: 1,
+        min: minValue,
         max: 10,
-        divisions: 9,
+        divisions: divisions,
         label: value.toInt().toString(),
         onChanged: onChanged,
         activeColor: Theme.of(context).primaryColor,

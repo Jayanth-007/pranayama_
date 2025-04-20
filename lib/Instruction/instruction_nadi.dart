@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:meditation_app/courses/nadi_shodhana_pranayama_page.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../Breathing_Pages/bilateral_screen.dart';
-import '../common_widgets/timer_widget.dart';
 import '../Customization/customize.dart';
 
 class NadiShodhanaPage extends StatefulWidget {
@@ -10,7 +10,9 @@ class NadiShodhanaPage extends StatefulWidget {
 }
 
 class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
-  String _selectedTechnique = '4:4 Nadi Shodhana (Standard)';
+  static const Color _brandColor = Color(0xff98bad5);
+
+  String _selectedTechnique = '4:4';
   final Map<String, String> _techniques = {
     '4:4': '4:4 Nadi Shodhana (Standard)',
     'custom': 'Customize Technique',
@@ -27,9 +29,16 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
     super.initState();
     _ytController = YoutubePlayerController(
       initialVideoId: YoutubePlayer.convertUrlToId(
-          "https://www.youtube.com/watch?v=R2cEQEKn3YM")!,
+        "https://www.youtube.com/watch?v=R2cEQEKn3YM",
+      )!,
       flags: YoutubePlayerFlags(autoPlay: false, mute: false),
     );
+  }
+
+  @override
+  void dispose() {
+    _ytController.dispose();
+    super.dispose();
   }
 
   @override
@@ -40,6 +49,7 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
         centerTitle: true,
         elevation: 0,
         toolbarHeight: 60,
+        backgroundColor: _brandColor,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -50,46 +60,62 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
             SizedBox(height: 8),
             _buildTechniqueButtons(),
             SizedBox(height: 24),
+
             _buildSectionTitle("Duration"),
             _buildDurationControls(),
-            SizedBox(height: 8),
+            SizedBox(height: 16),
             _buildDurationHint(),
             SizedBox(height: 24),
+
+            _buildCustomizeButton(),
+            SizedBox(height: 16),
+
+            _buildBeginButton(),
+            SizedBox(height: 32),
+
             _buildSectionTitle("About Nadi Shodhana"),
             _buildDescriptionText(),
             SizedBox(height: 24),
+
             _buildSectionTitle("Video Demonstration"),
             SizedBox(height: 12),
             _buildVideoPlayer(),
             SizedBox(height: 24),
+
             _buildSectionTitle("How To Practice"),
             SizedBox(height: 12),
             ..._buildInstructionSteps(),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomButtons(),
+      bottomNavigationBar: _buildLearnMoreButton(),
     );
   }
 
   Widget _buildSectionTitle(String text) {
     return Text(
       text,
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
     );
   }
 
   Widget _buildTechniqueButtons() {
     return Row(
       children: _techniques.entries.map((entry) {
-        bool isSelected = _selectedTechnique == entry.value;
+        bool isSelected = _selectedTechnique == entry.key;
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? Color(0xff304674) : Colors.grey[200],
-                foregroundColor: isSelected ? Colors.white : Colors.black87,
+                backgroundColor:
+                isSelected ? _brandColor : Colors.grey[200],
+                foregroundColor:
+                isSelected ? Colors.white : Colors.black87,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -97,10 +123,8 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
                 elevation: 0,
               ),
               onPressed: () {
-                setState(() => _selectedTechnique = entry.value);
-                if (entry.key == 'custom') {
-                  _showCustomDialog();
-                }
+                setState(() => _selectedTechnique = entry.key);
+                if (entry.key == 'custom') _showCustomDialog();
               },
               child: Text(
                 entry.value,
@@ -116,9 +140,8 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
 
   Widget _buildDurationControls() {
     final options = _isMinutesMode
-        ? [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] // Minutes
-        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]; // Rounds
-
+        ? [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75];
     return Column(
       children: [
         Row(
@@ -136,25 +159,24 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
             scrollDirection: Axis.horizontal,
             itemCount: options.length,
             itemBuilder: (context, index) {
+              final val = options[index];
               return GestureDetector(
-                onTap: () {
-                  setState(() => _selectedDuration = options[index]);
-                },
+                onTap: () => setState(() => _selectedDuration = val),
                 child: Container(
                   width: 80,
                   margin: EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: _selectedDuration == options[index]
-                        ? Color(0xff304674)
+                    color: _selectedDuration == val
+                        ? _brandColor
                         : Colors.grey[200],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
-                      options[index].toString(),
+                      "$val",
                       style: TextStyle(
                         fontSize: 20,
-                        color: _selectedDuration == options[index]
+                        color: _selectedDuration == val
                             ? Colors.white
                             : Colors.black87,
                       ),
@@ -175,25 +197,27 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color: isActive ? Color(0xff304674) : Colors.transparent,
+          color: isActive ? _brandColor : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? Color(0xff304674) : Colors.grey[400]!,
+            color: isActive ? _brandColor : Colors.grey[400]!,
           ),
         ),
         child: Text(
           text,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.black87,
-          ),
+          style: TextStyle(color: isActive ? Colors.white : Colors.black87),
         ),
       ),
     );
   }
 
   Widget _buildDurationHint() {
-    final inhale = _selectedTechnique.startsWith('4:') ? 4 : _customInhale ?? 4;
-    final exhale = _selectedTechnique.startsWith('4:') ? 4 : _customExhale ?? 4;
+    final inhale = _selectedTechnique == '4:4'
+        ? 4
+        : (_customInhale ?? 4);
+    final exhale = _selectedTechnique == '4:4'
+        ? 4
+        : (_customExhale ?? 4);
     final totalSeconds = _isMinutesMode
         ? _selectedDuration * 60
         : _selectedDuration * (inhale + exhale);
@@ -207,32 +231,103 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
     );
   }
 
-  Widget _buildDescriptionText() {
-    return Text(
-      "Nadi Shodhana Pranayama, or alternate nostril breathing, balances the body's energy and calms the mind. "
-          "This technique alternates breath between nostrils to promote mental clarity, reduce stress, and enhance respiratory function.",
-      style: TextStyle(fontSize: 15, height: 1.5),
+  Widget _buildCustomizeButton() {
+    return OutlinedButton.icon(
+      icon: Icon(Icons.settings, size: 20, color: Colors.black),
+      label: Text("Customize Breathing Pattern"),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.black,
+        padding: EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        side: BorderSide(color: _brandColor),
+      ),
+      onPressed: () => _showCustomDialog(),
     );
   }
 
-  Widget _buildVideoPlayer() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: YoutubePlayer(
-        controller: _ytController,
-        aspectRatio: 16 / 9,
-        showVideoProgressIndicator: true,
+  Widget _buildBeginButton() {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _navigateToTechnique,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _brandColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          "BEGIN EXERCISE",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
       ),
+    );
+  }
+
+  void _showCustomDialog() async {
+    final result = await showCustomizationDialog(
+      context,
+      initialInhale: _customInhale ?? 4,
+      initialExhale: _customExhale ?? 4,
+      initialHold: 0,
+    );
+    if (result != null) {
+      setState(() {
+        _customInhale = result['inhale'];
+        _customExhale = result['exhale'];
+        _selectedTechnique = 'custom';
+      });
+    }
+  }
+
+  void _navigateToTechnique() {
+    if (_selectedTechnique == 'custom' &&
+        (_customInhale == null || _customExhale == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please set custom breathing values')),
+      );
+      return;
+    }
+    final inhale = _selectedTechnique == '4:4'
+        ? 4
+        : _customInhale!;
+    final exhale = _selectedTechnique == '4:4'
+        ? 4
+        : _customExhale!;
+    final rounds = _isMinutesMode
+        ? (_selectedDuration * 60) ~/ (inhale + exhale)
+        : _selectedDuration;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BilateralScreen(
+          inhaleDuration: inhale,
+          exhaleDuration: exhale,
+          rounds: rounds,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionText() {
+    return Text(
+      "Nadi Shodhana Pranayama, or alternate nostril breathing, balances the body's energy "
+          "and calms the mind. Alternate inhalations and exhalations through each nostril "
+          "promote mental clarity, reduce stress, and enhance respiratory efficiency.",
+      style: TextStyle(fontSize: 15, height: 1.5),
     );
   }
 
   List<Widget> _buildInstructionSteps() {
     return [
-      _buildStepCard(1, "Sit comfortably with your spine erect and relax your shoulders."),
-      _buildStepCard(2, "Close your right nostril gently with your thumb and inhale slowly through your left nostril."),
-      _buildStepCard(3, "Close your left nostril with your ring finger, open your right nostril and exhale slowly."),
-      _buildStepCard(4, "Inhale slowly through your right nostril, then close it and open your left nostril to exhale."),
-      _buildStepCard(5, "This completes one round. Continue alternating for several rounds."),
+      _buildStepCard(1, "Sit comfortably with spine straight and shoulders relaxed."),
+      _buildStepCard(2, "Close your right nostril with your thumb; inhale slowly through the left."),
+      _buildStepCard(3, "Close left nostril with ring finger, release thumb, exhale via right."),
+      _buildStepCard(4, "Inhale through right, close it, then exhale through left."),
+      _buildStepCard(5, "Continue alternating for your selected duration."),
     ];
   }
 
@@ -247,113 +342,57 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 14,
-              backgroundColor: Color(0xff98bad5),
+              backgroundColor: _brandColor,
               child: Text(
-                num.toString(),
+                "$num",
                 style: TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
             SizedBox(width: 12),
-            Expanded(
-              child: Text(text, style: TextStyle(height: 1.4)),
-            ),
+            Expanded(child: Text(text, style: TextStyle(height: 1.4))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBottomButtons() {
+  Widget _buildVideoPlayer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: YoutubePlayer(
+        controller: _ytController,
+        aspectRatio: 16 / 9,
+        showVideoProgressIndicator: true,
+      ),
+    );
+  }
+
+  Widget _buildLearnMoreButton() {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () {
-                // Learn more navigation
-              },
-              child: Text(
-                "Learn More →",
-                style: TextStyle(
-                  color: Color(0xff304674),
-                  fontWeight: FontWeight.w500,
-                ),
+        child: TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => NadiShodhanaPranayamaPage(),
               ),
+            );
+          },
+          child: Text(
+            "Learn More →",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
             ),
-            ElevatedButton(
-              onPressed: _navigateToTechnique,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xff304674),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                "BEGIN EXERCISE",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
-  }
-
-  void _showCustomDialog() async {
-    final result = await showCustomizationDialog(
-      context,
-      initialInhale: _customInhale ?? 4,
-      initialExhale: _customExhale ?? 4,
-      initialHold: 0,
-    );
-
-    if (result != null) {
-      setState(() {
-        _customInhale = result['inhale'];
-        _customExhale = result['exhale'];
-      });
-    }
-  }
-
-  void _navigateToTechnique() {
-    if (_selectedTechnique == 'Customize Technique' && (_customInhale == null || _customExhale == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please set custom breathing values')),
-      );
-      return;
-    }
-
-    final inhale = _selectedTechnique.startsWith('4:') ? 4 : _customInhale!;
-    final exhale = _selectedTechnique.startsWith('4:') ? 4 : _customExhale!;
-    final rounds = _isMinutesMode
-        ? (_selectedDuration * 60) ~/ (inhale + exhale)
-        : _selectedDuration;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BilateralScreen(
-          inhaleDuration: inhale,
-          exhaleDuration: exhale,
-          rounds: rounds,
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ytController.dispose();
-    super.dispose();
   }
 }

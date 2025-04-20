@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditation_app/Breathing_Pages/abdominal_23.dart';
 import 'package:meditation_app/Breathing_Pages/bilateral_screen.dart';
 import 'package:meditation_app/Customization/customize.dart';
+import 'package:meditation_app/courses/abdominal_breathing_page.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 
@@ -105,12 +106,19 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
         child: TextButton(
           onPressed: () {
             // Navigate to learn more page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AbdominalBreathingLearnMorePage(), // ← your learn‐more screen
+              ),
+            );
           },
           child: Text(
             "Learn More →",
             style: TextStyle(
-              color: Color(0xff304674),
-              fontWeight: FontWeight.w500,
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -128,7 +136,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? Color(0xff304674) : Colors.grey[200],
+                backgroundColor: isSelected ? Color(0xff98bad5) : Colors.grey[200],
                 foregroundColor: isSelected ? Colors.white : Colors.black87,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -196,7 +204,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                   margin: EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     color: _selectedDuration == options[index]
-                        ? Color(0xff304674)
+                        ? Color(0xff98bad5)
                         : Colors.grey[200],
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -229,10 +237,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color: isActive ? Color(0xff304674) : Colors.transparent,
+          color: isActive ? Color(0xff98bad5) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? Color(0xff304674) : Colors.grey[400]!,
+            color: isActive ? Color(0xff98bad5) : Colors.grey[400]!,
           ),
         ),
         child: Text(
@@ -265,14 +273,15 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   // Customize button
   Widget _buildCustomizeButton() {
     return OutlinedButton.icon(
-      icon: Icon(Icons.settings, size: 20),
+      icon: Icon(Icons.settings, size: 20, color: Colors.black),
       label: Text("Customize Breathing Pattern"),
       style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.black,
         padding: EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        side: BorderSide(color: Color(0xff304674)),
+        side: BorderSide(color: Color(0xff98bad5)),
       ),
       onPressed: () async {
         final result = await showCustomizationDialog(
@@ -336,7 +345,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
           );
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xff304674),
+          backgroundColor: Color(0xff98bad5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

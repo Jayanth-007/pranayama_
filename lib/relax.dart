@@ -69,6 +69,18 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
 
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
+
+    // Load saved image path for this user from SharedPreferences
+    if (user != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPath = prefs.getString('profileImage_${user.uid}');
+      if (savedPath != null && File(savedPath).existsSync()) {
+        setState(() {
+          _profileImage = File(savedPath);
+        });
+      }
+    }
+
     if (user != null) {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
@@ -90,9 +102,16 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
+    final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
+      // Save picked image path under this user's key
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profileImage_${user.uid}', image.path);
+      }
+
       setState(() {
         _profileImage = File(image.path);
         _screens[0] = MeditationScreen(
@@ -234,6 +253,9 @@ class _MeditationScreenState extends State<MeditationScreen> {
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
 
+  // Combined items list for all categories with type indication
+  List<dynamic> _allItems = [];
+
   @override
   void initState() {
     super.initState();
@@ -242,6 +264,155 @@ class _MeditationScreenState extends State<MeditationScreen> {
         _scrollOffset = _scrollController.offset;
       });
     });
+
+    // Initialize all items
+    _initializeItems();
+  }
+
+  void _initializeItems() {
+    // Daily wisdom items
+    final List<_WisdomItem> wisdomItems = [
+      _WisdomItem(
+        "Mindfulness",
+        "Mindfulness is the basic human ability to be fully present.",
+        "assets/images/thought1.png",
+        [Colors.amber[700]!, Colors.amber[300]!],
+      ),
+      _WisdomItem(
+        "Balance",
+        "Yoga helps create balance in body, mind and spirit.",
+        "assets/images/thought2.png",
+        [Colors.purple[700]!, Colors.purple[300]!],
+      ),
+      _WisdomItem(
+        "Breathe",
+        "When in doubt, breathe out.",
+        "assets/images/thought3.png",
+        [Colors.indigo[700]!, Colors.indigo[300]!],
+      ),
+      _WisdomItem(
+        "Self-Care",
+        "Taking care of yourself is part of taking care of your life.",
+        "assets/images/thought4.png",
+        [Colors.deepOrange[700]!, Colors.deepOrange[300]!],
+      ),
+    ];
+
+    // Meditation breathing items
+    final List<dynamic> meditationItems = [
+      _BreathingItem(
+        "Abdominal\nBreathing",
+        ['assets/images/13.png'],
+        [Colors.teal[800]!, Colors.teal[400]!],
+        AbdominalBreathingPage(),
+      ),
+      _BreathingItem(
+        "Chest\nBreathing",
+        ['assets/images/15.png'],
+        [Colors.teal[400]!, Colors.teal[600]!],
+        ChestBreathingPage(),
+      ),
+      _BreathingItem(
+        "Complete\nBreathing",
+        ['assets/images/17.png'],
+        [Colors.teal[700]!, Colors.teal[300]!],
+        CompleteBreathingPage(),
+      ),
+      // Add wisdom card to fill empty space in Meditation section
+      wisdomItems[0],
+    ];
+
+    // Pranayama items
+    final List<dynamic> pranayamaItems = [
+      _BreathingItem(
+        "Bhramari\nPranayama",
+        ['assets/images/21.png'],
+        [Colors.teal[800]!, Colors.teal[300]!],
+        BhramariBreathingPage(),
+      ),
+      _BreathingItem(
+        "Nadi\nShodhana",
+        ['assets/images/1.png'],
+        [Colors.teal[500]!, Colors.teal[200]!],
+        NadiShodhanaPage(),
+      ),
+      _BreathingItem(
+        "Ujjayi\nPranayama",
+        ['assets/images/7.png'],
+        [Colors.teal[300]!, Colors.teal[700]!],
+        UjjayiPranayamaPage(),
+      ),
+      _BreathingItem(
+        "Surya\nBhedana",
+        ['assets/images/3.png'],
+        [Colors.teal[200]!, Colors.teal[500]!],
+        SuryaBhedanaPranayamaPage(),
+      ),
+      _BreathingItem(
+        "Chandra\nBhedana",
+        ['assets/images/5.png'],
+        [Colors.teal[800]!, Colors.teal[400]!],
+        ChandraBhedanaPranayamaPage(),
+      ),
+      _BreathingItem(
+        "Sheetali\nPranayama",
+        ['assets/images/13.png'],
+        [Colors.teal[300]!, Colors.teal[600]!],
+        SheetaliPranayamaPage(),
+      ),
+      _BreathingItem(
+        "Sheetkari\nPranayama",
+        ['assets/images/9.png'],
+        [Colors.teal[400]!, Colors.teal[800]!],
+        SheetkariPranayamaPage(),
+      ),
+      // Add wisdom card to fill empty space in Pranayama section
+      wisdomItems[1],
+    ];
+
+    // Advanced items
+    final List<dynamic> advancedItems = [
+      _BreathingItem(
+        "Box\nBreathing",
+        ['assets/images/19.png'],
+        [Colors.teal[700]!, Colors.teal[300]!],
+        BoxBreathingPage(),
+      ),
+      // Add remaining wisdom cards to fill empty space in Advanced section
+      wisdomItems[2],
+      wisdomItems[3],
+    ];
+
+    // Create sections with headers and items
+    _allItems = [
+      {'type': 'header', 'title': 'MEDITATION'},
+      ...meditationItems.map((item) {
+        if (item is _BreathingItem) {
+          return {'type': 'breathing', 'item': item};
+        } else if (item is _WisdomItem) {
+          return {'type': 'wisdom', 'item': item};
+        }
+        return {'type': 'unknown', 'item': item};
+      }).toList(),
+      {'type': 'header', 'title': 'PRANAYAMA'},
+      ...pranayamaItems.map((item) {
+        if (item is _BreathingItem) {
+          return {'type': 'breathing', 'item': item};
+        } else if (item is _WisdomItem) {
+          return {'type': 'wisdom', 'item': item};
+        }
+        return {'type': 'unknown', 'item': item};
+      }).toList(),
+      {'type': 'header', 'title': 'ADVANCED'},
+      ...advancedItems.map((item) {
+        if (item is _BreathingItem) {
+          return {'type': 'breathing', 'item': item};
+        } else if (item is _WisdomItem) {
+          return {'type': 'wisdom', 'item': item};
+        }
+        return {'type': 'unknown', 'item': item};
+      }).toList(),
+    ];
   }
 
   @override
@@ -278,7 +449,6 @@ class _MeditationScreenState extends State<MeditationScreen> {
             stretch: true,
             flexibleSpace: LayoutBuilder(
               builder: (context, constraints) {
-                final double top = constraints.biggest.height;
                 final bool showTitle = _scrollOffset > appBarHeight - kToolbarHeight - 15;
 
                 return FlexibleSpaceBar(
@@ -325,17 +495,20 @@ class _MeditationScreenState extends State<MeditationScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                CircleAvatar(
-                                  radius: 34,
-                                  backgroundImage: widget.profileImage != null
-                                      ? FileImage(widget.profileImage!)
-                                      : (widget.photoUrl != null
-                                      ? NetworkImage(widget.photoUrl!)
-                                      : null) as ImageProvider?,
-                                  backgroundColor: Colors.white,
-                                  child: (widget.profileImage == null && widget.photoUrl == null)
-                                      ? Icon(Icons.person, size: 30, color: Color(0xFF1A2C50))
-                                      : null,
+                                GestureDetector(
+                                  onTap: widget.pickImage,
+                                  child: CircleAvatar(
+                                    radius: 34,
+                                    backgroundImage: widget.profileImage != null
+                                        ? FileImage(widget.profileImage!)
+                                        : (widget.photoUrl != null
+                                        ? NetworkImage(widget.photoUrl!)
+                                        : null) as ImageProvider?,
+                                    backgroundColor: Colors.white,
+                                    child: (widget.profileImage == null && widget.photoUrl == null)
+                                        ? Icon(Icons.person, size: 30, color: Color(0xFF1A2C50))
+                                        : null,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Column(
@@ -372,93 +545,14 @@ class _MeditationScreenState extends State<MeditationScreen> {
               },
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-                  _buildSectionTitle('MEDITATION'),
-                  const SizedBox(height: 16),
-                  _buildBreathingGrid([
-                    _BreathingItem(
-                      "Abdominal\nBreathing",
-                      ['assets/images/13.png'],
-                      [Colors.teal[800]!, Colors.teal[400]!],
-                      AbdominalBreathingPage(),
-                    ),
-                    _BreathingItem(
-                      "Chest\nBreathing",
-                      ['assets/images/15.png'],
-                      [Colors.teal[400]!, Colors.teal[600]!],
-                      ChestBreathingPage(),
-                    ),
-                    _BreathingItem(
-                      "Complete\nBreathing",
-                      ['assets/images/17.png'],
-                      [Colors.teal[700]!, Colors.teal[300]!],
-                      CompleteBreathingPage(),
-                    ),
-                  ]),
-                  const SizedBox(height: 30),
-                  _buildSectionTitle('PRANAYAMA'),
-                  const SizedBox(height: 16),
-                  _buildBreathingGrid([
-                    _BreathingItem(
-                      "Bhramari\nPranayama",
-                      ['assets/images/21.png'],
-                      [Colors.teal[800]!, Colors.teal[300]!],
-                      BhramariBreathingPage(),
-                    ),
-                    _BreathingItem(
-                      "Nadi\nShodhana",
-                      ['assets/images/1.png'],
-                      [Colors.teal[500]!, Colors.teal[200]!],
-                      NadiShodhanaPage(),
-                    ),
-                    _BreathingItem(
-                      "Ujjayi\nPranayama",
-                      ['assets/images/7.png'],
-                      [Colors.teal[300]!, Colors.teal[700]!],
-                      UjjayiPranayamaPage(),
-                    ),
-                    _BreathingItem(
-                      "Surya\nBhedana",
-                      ['assets/images/3.png'],
-                      [Colors.teal[200]!, Colors.teal[500]!],
-                      SuryaBhedanaPranayamaPage(),
-                    ),
-                    _BreathingItem(
-                      "Chandra\nBhedana",
-                      ['assets/images/5.png'],
-                      [Colors.teal[800]!, Colors.teal[400]!],
-                      ChandraBhedanaPranayamaPage(),
-                    ),
-                    _BreathingItem(
-                      "Sheetali\nPranayama",
-                      ['assets/images/13.png'],
-                      [Colors.teal[300]!, Colors.teal[600]!],
-                      SheetaliPranayamaPage(),
-                    ),
-                    _BreathingItem(
-                      "Sheetkari\nPranayama",
-                      ['assets/images/9.png'],
-                      [Colors.teal[400]!, Colors.teal[800]!],
-                      SheetkariPranayamaPage(),
-                    ),
-                  ]),
-                  const SizedBox(height: 30),
-                  _buildSectionTitle('ADVANCED'),
-                  const SizedBox(height: 16),
-                  _buildBreathingGrid([
-                    _BreathingItem(
-                      "Box\nBreathing",
-                      ['assets/images/19.png'],
-                      [Colors.teal[700]!, Colors.teal[300]!],
-                      BoxBreathingPage(),
-                    ),
-                  ]),
+                  _buildUnifiedGrid(),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -466,6 +560,61 @@ class _MeditationScreenState extends State<MeditationScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUnifiedGrid() {
+    // Group the items to build sections
+    List<Widget> sections = [];
+    String? currentHeader;
+    List<dynamic> currentItems = [];
+
+    for (var i = 0; i < _allItems.length; i++) {
+      var item = _allItems[i];
+
+      if (item['type'] == 'header') {
+        if (currentHeader != null && currentItems.isNotEmpty) {
+          sections.add(_buildSectionTitle(currentHeader));
+          sections.add(const SizedBox(height: 16));
+          sections.add(_buildGridItems(currentItems));
+          sections.add(const SizedBox(height: 30));
+          currentItems = [];
+        }
+        currentHeader = item['title'];
+      } else {
+        currentItems.add(item);
+      }
+    }
+
+    if (currentHeader != null && currentItems.isNotEmpty) {
+      sections.add(_buildSectionTitle(currentHeader));
+      sections.add(const SizedBox(height: 16));
+      sections.add(_buildGridItems(currentItems));
+    }
+
+    return Column(children: sections);
+  }
+
+  Widget _buildGridItems(List<dynamic> items) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16.0,
+        crossAxisSpacing: 16.0,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        if (item['type'] == 'breathing') {
+          return _BreathingCard(item: item['item']);
+        } else if (item['type'] == 'wisdom') {
+          return _WisdomCard(item: item['item']);
+        }
+        return Container();
+      },
     );
   }
 
@@ -490,21 +639,94 @@ class _MeditationScreenState extends State<MeditationScreen> {
       ),
     );
   }
+}
 
-  Widget _buildBreathingGrid(List<_BreathingItem> items) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16.0,
-        crossAxisSpacing: 16.0,
-        childAspectRatio: 0.9,
+// Class for Daily Wisdom items
+class _WisdomItem {
+  final String title;
+  final String content;
+  final String imagePath;
+  final List<Color> gradientColors;
+
+  _WisdomItem(this.title, this.content, this.imagePath, this.gradientColors);
+}
+
+// Widget for Daily Wisdom cards
+class _WisdomCard extends StatelessWidget {
+  final _WisdomItem item;
+
+  const _WisdomCard({Key? key, required this.item}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return _BreathingCard(item: items[index]);
-      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                item.imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(color: item.gradientColors[0]);
+                },
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [
+                    item.gradientColors[0].withOpacity(0.8),
+                    item.gradientColors[1].withOpacity(0.6),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.content,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontFamily: 'Poppins',
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -548,15 +770,12 @@ class _BreathingCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Background image with scale effect
               Positioned.fill(
                 child: Image.asset(
                   item.imagePaths[0],
                   fit: BoxFit.cover,
                 ),
               ),
-
-              // Gradient overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -571,8 +790,6 @@ class _BreathingCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-
-              // Content
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
