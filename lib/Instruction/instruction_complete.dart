@@ -11,10 +11,16 @@ class CompleteBreathingPage extends StatefulWidget {
 
 class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
   String _selectedTechnique = '4:6';
+  String _selectedImage = 'assets/images/muladhara_chakra3.png'; // Default image
   final Map<String, String> _techniques = {
-    '2:3': '2:3 Breathing',
     '4:6': '4:6 Breathing (Recommended)',
+    '2:3': '2:3 Breathing',
   };
+  final List<Map<String, String>> _imageOptions = [
+    {'name': 'Option 1', 'path': 'assets/images/option3.png'},
+    {'name': 'Option 2', 'path': 'assets/images/option1.png'},
+    {'name': 'Option 3', 'path': 'assets/images/option2.png'},
+  ];
 
   late YoutubePlayerController _ytController;
   bool _isMinutesMode = false;
@@ -25,16 +31,9 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     super.initState();
     _ytController = YoutubePlayerController(
       initialVideoId: YoutubePlayer.convertUrlToId(
-        "https://www.youtube.com/watch?v=HhDUXFJDgB4", // replace with your complete‑breathing video URL
-      )!,
+          "https://www.youtube.com/watch?v=HhDUXFJDgB4")!,
       flags: YoutubePlayerFlags(autoPlay: false, mute: false),
     );
-  }
-
-  @override
-  void dispose() {
-    _ytController.dispose();
-    super.dispose();
   }
 
   @override
@@ -55,29 +54,29 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
             SizedBox(height: 8),
             _buildTechniqueButtons(),
             SizedBox(height: 24),
-
+            _buildSectionTitle("Visualization Image"),
+            SizedBox(height: 8),
+            _buildImageSelector(),
+            SizedBox(height: 24),
             _buildSectionTitle("Duration"),
             _buildDurationControls(),
             SizedBox(height: 24),
-
             _buildCustomizeButton(),
             SizedBox(height: 16),
-
             _buildBeginButton(),
-            SizedBox(height: 32),
-
-            _buildSectionTitle("About Complete Breathing"),
-            _buildDescriptionText(),
             SizedBox(height: 24),
-
-            _buildSectionTitle("Video Demonstration"),
-            SizedBox(height: 12),
-            _buildVideoPlayer(),
-            SizedBox(height: 24),
-
-            _buildSectionTitle("How To Practice"),
-            SizedBox(height: 12),
-            ..._buildInstructionSteps(),
+            // Steps dropdown
+            ExpansionTile(
+              title: Text(
+                "How To Practice",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              children: _buildInstructionSteps(),
+            ),
           ],
         ),
       ),
@@ -85,6 +84,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Section title widget
   Widget _buildSectionTitle(String text) {
     return Text(
       text,
@@ -96,6 +96,46 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Video player widget (unused after removal)
+  Widget _buildVideoPlayer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: YoutubePlayer(
+        controller: _ytController,
+        aspectRatio: 16 / 9,
+        showVideoProgressIndicator: true,
+      ),
+    );
+  }
+
+  // Learn more button
+  Widget _buildLearnMoreButton() {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompleteBreathingLearnMorePage(),
+              ),
+            );
+          },
+          child: Text(
+            "Learn More →",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Technique selection buttons
   Widget _buildTechniqueButtons() {
     return Row(
       children: _techniques.entries.map((entry) {
@@ -105,8 +145,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                isSelected ? Color(0xff98bad5) : Colors.grey[200],
+                backgroundColor: isSelected ? Color(0xff98bad5) : Colors.grey[200],
                 foregroundColor: isSelected ? Colors.white : Colors.black87,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -142,10 +181,57 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Image selector
+  Widget _buildImageSelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _imageOptions.map((image) {
+        bool isSelected = _selectedImage == image['path'];
+        return GestureDetector(
+          onTap: () => setState(() => _selectedImage = image['path']!),
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? Color(0xff98bad5) : Colors.grey[300]!,
+                width: isSelected ? 3 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                image: AssetImage(image['path']!),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                color: Colors.black54,
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  image['name']!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Duration controls
   Widget _buildDurationControls() {
-    final options = _isMinutesMode
+    final List<int> options = _isMinutesMode
         ? [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
-        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75];
+        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+
     return Column(
       children: [
         Row(
@@ -163,24 +249,25 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
             scrollDirection: Axis.horizontal,
             itemCount: options.length,
             itemBuilder: (context, index) {
-              final val = options[index];
               return GestureDetector(
-                onTap: () => setState(() => _selectedDuration = val),
+                onTap: () {
+                  setState(() => _selectedDuration = options[index]);
+                },
                 child: Container(
                   width: 80,
                   margin: EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: _selectedDuration == val
+                    color: _selectedDuration == options[index]
                         ? Color(0xff98bad5)
                         : Colors.grey[200],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
-                      "$val",
+                      options[index].toString(),
                       style: TextStyle(
                         fontSize: 20,
-                        color: _selectedDuration == val
+                        color: _selectedDuration == options[index]
                             ? Colors.white
                             : Colors.black87,
                       ),
@@ -197,6 +284,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Toggle option for duration mode
   Widget _buildToggleOption(String text, bool isActive) {
     return GestureDetector(
       onTap: () => setState(() => _isMinutesMode = text == "Minutes"),
@@ -211,12 +299,15 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
         ),
         child: Text(
           text,
-          style: TextStyle(color: isActive ? Colors.white : Colors.black87),
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.black87,
+          ),
         ),
       ),
     );
   }
 
+  // Duration hint text
   Widget _buildDurationHint() {
     final inhale = _selectedTechnique == '4:6' ? 4 : 2;
     final exhale = _selectedTechnique == '4:6' ? 6 : 3;
@@ -233,6 +324,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Customize button
   Widget _buildCustomizeButton() {
     return OutlinedButton.icon(
       icon: Icon(Icons.settings, size: 20, color: Colors.black),
@@ -252,18 +344,22 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
           initialExhale: _selectedTechnique == '4:6' ? 6 : 3,
           initialHold: 0,
         );
+
         if (result != null) {
+          print("Customized: Inhale ${result['inhale']}, Exhale ${result['exhale']}, Hold ${result['hold']}");
           final rounds = _isMinutesMode
               ? (_selectedDuration * 60) ~/
               (result['inhale']! + result['exhale']! + result['hold']!)
               : _selectedDuration;
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => BilateralScreen(
+              builder: (context) => BilateralScreen(
                 inhaleDuration: result['inhale']!,
                 exhaleDuration: result['exhale']!,
                 rounds: rounds,
+                imagePath: _selectedImage,
               ),
             ),
           );
@@ -272,6 +368,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
+  // Begin exercise button
   Widget _buildBeginButton() {
     return SizedBox(
       height: 50,
@@ -282,13 +379,15 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
           final rounds = _isMinutesMode
               ? (_selectedDuration * 60) ~/ (inhale + exhale)
               : _selectedDuration;
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => BilateralScreen(
+              builder: (context) => BilateralScreen(
                 inhaleDuration: inhale,
                 exhaleDuration: exhale,
                 rounds: rounds,
+                imagePath: _selectedImage,
               ),
             ),
           );
@@ -311,15 +410,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     );
   }
 
-  Widget _buildDescriptionText() {
-    return Text(
-      "Complete breathing combines diaphragmatic (abdominal), thoracic (chest), "
-          "and clavicular (upper chest) breathing into one fluid cycle. It engages "
-          "all parts of your lungs for maximum oxygen exchange and deep relaxation.",
-      style: TextStyle(fontSize: 15, height: 1.5),
-    );
-  }
-
+  // Instruction steps
   List<Widget> _buildInstructionSteps() {
     return [
       _buildStepCard(1, "Sit comfortably with your spine straight and shoulders relaxed."),
@@ -330,6 +421,7 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
     ];
   }
 
+  // Step card widget
   Widget _buildStepCard(int num, String text) {
     return Card(
       margin: EdgeInsets.only(bottom: 12),
@@ -352,47 +444,18 @@ class _CompleteBreathingPageState extends State<CompleteBreathingPage> {
               ),
             ),
             SizedBox(width: 12),
-            Expanded(child: Text(text, style: TextStyle(height: 1.4))),
+            Expanded(
+              child: Text(text, style: TextStyle(height: 1.4)),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildVideoPlayer() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: YoutubePlayer(
-        controller: _ytController,
-        aspectRatio: 16 / 9,
-        showVideoProgressIndicator: true,
-      ),
-    );
-  }
-
-  Widget _buildLearnMoreButton() {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CompleteBreathingLearnMorePage(),
-              ),
-            );
-          },
-          child: Text(
-            "Learn More →",
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _ytController.dispose();
+    super.dispose();
   }
 }

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:meditation_app/Instruction/instruction_abdo.dart';
 import 'package:meditation_app/Instruction/instruction_chest.dart';
 import 'package:meditation_app/Instruction/instruction_complete.dart';
+import 'package:meditation_app/courses/abdominal_breathing_page.dart';
 import 'package:meditation_app/courses/bhramari_pranayama_page.dart';
 import 'package:meditation_app/courses/chandra_bhedana_pranayama_page.dart';
+import 'package:meditation_app/courses/chest_breathing_page.dart';
+import 'package:meditation_app/courses/complete_breathing_page.dart';
 import 'package:meditation_app/courses/nadi_shodhana_pranayama_page.dart';
 import 'package:meditation_app/courses/sheetali_pranayama_page.dart';
 import 'package:meditation_app/courses/sheetkari_pranayama_page.dart';
@@ -28,9 +31,9 @@ class CoursesPage extends StatelessWidget {
 
   // Mapping of course titles to their dedicated pages
   final Map<String, Widget Function()> coursePages = {
-    "Abdominal Breathing": () =>  AbdominalBreathingPage(),
-    "Chest Breathing": () =>  ChestBreathingPage(),
-    "Complete Breathing": () =>  CompleteBreathingPage(),
+    "Abdominal Breathing": () =>  AbdominalBreathingLearnMorePage(),
+    "Chest Breathing": () =>  ChestBreathingLearnMorePage(),
+    "Complete Breathing": () =>  CompleteBreathingLearnMorePage(),
     "Bhramari Pranayama": () => BhramariBreathingLearnMorePage(),
     "Nadi Shodhana Pranayama": () => const NadiShodhanaPranayamaPage(),
     "Ujjayi Pranayama": () => const UjjayiPranayamaLearnMorePage(),

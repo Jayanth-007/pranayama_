@@ -6,12 +6,14 @@ class BilateralScreen extends StatefulWidget {
   final int inhaleDuration;
   final int exhaleDuration;
   final int rounds;
+  final String imagePath;
 
   const BilateralScreen({
     Key? key,
     required this.inhaleDuration,
     required this.exhaleDuration,
     required this.rounds,
+    required this.imagePath,
   }) : super(key: key);
 
   @override
@@ -29,11 +31,9 @@ class _BilateralScreenState extends State<BilateralScreen>
   int _currentRound = 0;
   String _currentPhase = "prepare";
 
-  // Cache AudioSource to prevent repeated creation
   late final AssetSource _inhaleSound;
   late final AssetSource _exhaleSound;
 
-  // Precalculate timing values
   late final double _inhaleFraction;
   late final double _gapFraction;
 
@@ -41,20 +41,16 @@ class _BilateralScreenState extends State<BilateralScreen>
   void initState() {
     super.initState();
 
-    // Initialize audio sources
     _inhaleSound = AssetSource('../assets/music/inhale_bell1.mp3');
     _exhaleSound = AssetSource('../assets/music/exhale_bell1.mp3');
 
-    // Precalculate timing fractions
     final totalDuration = widget.inhaleDuration + 0.10 + widget.exhaleDuration;
     _inhaleFraction = widget.inhaleDuration / totalDuration;
     _gapFraction = (widget.inhaleDuration + 0.10) / totalDuration;
 
-    // Initialize separate audio players for inhale and exhale
     _inhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
     _exhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
 
-    // Preload audio files
     _preloadAudio();
 
     _controller = AnimationController(
@@ -62,7 +58,6 @@ class _BilateralScreenState extends State<BilateralScreen>
       vsync: this,
     );
 
-    // Optimize animation listener
     _controller.addListener(_handleAnimationProgress);
     _controller.addStatusListener(_handleAnimationStatus);
   }
@@ -85,7 +80,7 @@ class _BilateralScreenState extends State<BilateralScreen>
     if (progress <= _inhaleFraction) {
       newPhase = "inhale";
     } else if (progress <= _gapFraction) {
-      newPhase = "gap"; // Short gap between inhale and exhale
+      newPhase = "gap";
     } else {
       newPhase = "exhale";
     }
@@ -107,7 +102,6 @@ class _BilateralScreenState extends State<BilateralScreen>
       _currentRound++;
       if (_currentRound < widget.rounds) {
         _controller.reset();
-        // Reduced delay for smoother transition
         await Future.delayed(const Duration(milliseconds: 2));
         if (isRunning) {
           _startBreathingCycle();
@@ -117,7 +111,7 @@ class _BilateralScreenState extends State<BilateralScreen>
           isRunning = false;
           breathingText = "Complete";
         });
-        await _stopAllAudio(); // Stop audio when cycle is complete
+        await _stopAllAudio();
       }
     }
   }
@@ -226,7 +220,7 @@ class _BilateralScreenState extends State<BilateralScreen>
         if (progress <= _inhaleFraction) {
           scale = 1.0 + 0.5 * (progress / _inhaleFraction);
         } else if (progress <= _gapFraction) {
-          scale = 1.5; // Hold the scale during the gap
+          scale = 1.5;
         } else {
           scale = 1.5 - 0.5 * ((progress - _gapFraction) / (1 - _gapFraction));
         }
@@ -237,21 +231,14 @@ class _BilateralScreenState extends State<BilateralScreen>
         );
       },
       child: Container(
-        height: 150,
+        height: 300,
         width: 250,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          image: const DecorationImage(
-            image: AssetImage('assets/images/muladhara_chakra3.png'),
+          image: DecorationImage(
+            image: AssetImage(widget.imagePath),
             fit: BoxFit.cover,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.red.shade600.withOpacity(0.75),
-              blurRadius: 10,
-              spreadRadius: 10,
-            ),
-          ],
         ),
       ),
     );
@@ -405,7 +392,6 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 }
 
-// Extension to capitalize strings
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${this.substring(1)}";

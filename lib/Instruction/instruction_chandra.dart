@@ -268,16 +268,16 @@ class _ChandraBhedanaPranayamaPageState extends State<ChandraBhedanaPranayamaPag
           final rounds = _isMinutesMode
               ? (_selectedDuration * 60) ~/ (inhale + exhale)
               : _selectedDuration;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BilateralScreen(
-                inhaleDuration: inhale,
-                exhaleDuration: exhale,
-                rounds: rounds,
-              ),
-            ),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (_) => BilateralScreen(
+          //       inhaleDuration: inhale,
+          //       exhaleDuration: exhale,
+          //       rounds: rounds,
+          //     ),
+          //   ),
+          // );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: _brandColor,

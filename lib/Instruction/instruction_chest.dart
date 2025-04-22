@@ -11,10 +11,16 @@ class ChestBreathingPage extends StatefulWidget {
 
 class _ChestBreathingPageState extends State<ChestBreathingPage> {
   String _selectedTechnique = '4:6';
+  String _selectedImage = 'assets/images/option1.png'; // Default image
   final Map<String, String> _techniques = {
     '2:3': '2:3 Breathing',
     '4:6': '4:6 Breathing (Recommended)',
   };
+  final List<Map<String, String>> _imageOptions = [
+    {'name': 'Option 1', 'path': 'assets/images/option1.png'},
+    {'name': 'Option 2', 'path': 'assets/images/option2.png'},
+    {'name': 'Option 3', 'path': 'assets/images/option3.png'},
+  ];
 
   late YoutubePlayerController _ytController;
   bool _isMinutesMode = false;
@@ -25,7 +31,7 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
     super.initState();
     _ytController = YoutubePlayerController(
       initialVideoId: YoutubePlayer.convertUrlToId(
-        "https://www.youtube.com/watch?v=HhDUXFJDgB4", // replace with chest‐specific video if desired
+        "https://www.youtube.com/watch?v=HhDUXFJDgB4",
       )!,
       flags: YoutubePlayerFlags(autoPlay: false, mute: false),
     );
@@ -55,29 +61,28 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
             SizedBox(height: 8),
             _buildTechniqueButtons(),
             SizedBox(height: 24),
-
+            _buildSectionTitle("Visualization Image"),
+            SizedBox(height: 8),
+            _buildImageSelector(),
+            SizedBox(height: 24),
             _buildSectionTitle("Duration"),
             _buildDurationControls(),
             SizedBox(height: 24),
-
             _buildCustomizeButton(),
             SizedBox(height: 16),
-
             _buildBeginButton(),
-            SizedBox(height: 32),
-
-            _buildSectionTitle("About Chest Breathing"),
-            _buildDescriptionText(),
             SizedBox(height: 24),
-
-            _buildSectionTitle("Video Demonstration"),
-            SizedBox(height: 12),
-            _buildVideoPlayer(),
-            SizedBox(height: 24),
-
-            _buildSectionTitle("How To Practice"),
-            SizedBox(height: 12),
-            ..._buildInstructionSteps(),
+            ExpansionTile(
+              title: Text(
+                "How To Practice",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              children: _buildInstructionSteps(),
+            ),
           ],
         ),
       ),
@@ -134,6 +139,50 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
                       ),
                     ),
                 ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildImageSelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _imageOptions.map((image) {
+        bool isSelected = _selectedImage == image['path'];
+        return GestureDetector(
+          onTap: () => setState(() => _selectedImage = image['path']!),
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? Color(0xff98bad5) : Colors.grey[300]!,
+                width: isSelected ? 3 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                image: AssetImage(image['path']!),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                color: Colors.black54,
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  image['name']!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),
@@ -209,10 +258,9 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
             color: isActive ? Color(0xff98bad5) : Colors.grey[400]!,
           ),
         ),
-        child: Text(
-          text,
-          style: TextStyle(color: isActive ? Colors.white : Colors.black87),
-        ),
+        child: Text(text,
+            style:
+            TextStyle(color: isActive ? Colors.white : Colors.black87)),
       ),
     );
   }
@@ -223,10 +271,9 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
     final totalSeconds = _isMinutesMode
         ? _selectedDuration * 60
         : _selectedDuration * (inhale + exhale);
-
     return Text(
       _isMinutesMode
-          ? "≈ ${(_selectedDuration * 60 / (inhale + exhale)).toStringAsFixed(0)} rounds"
+          ? "≈ ${( _selectedDuration * 60 / (inhale + exhale)).toStringAsFixed(0)} rounds"
           : "≈ ${(totalSeconds / 60).toStringAsFixed(1)} minutes",
       textAlign: TextAlign.center,
       style: TextStyle(color: Colors.grey[600]),
@@ -248,10 +295,8 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
       onPressed: () async {
         final result = await showCustomizationDialog(
           context,
-          initialInhale:
-          _selectedTechnique == '4:6' ? 4 : 2,
-          initialExhale:
-          _selectedTechnique == '4:6' ? 6 : 3,
+          initialInhale: _selectedTechnique == '4:6' ? 4 : 2,
+          initialExhale: _selectedTechnique == '4:6' ? 6 : 3,
           initialHold: 0,
         );
         if (result != null) {
@@ -266,6 +311,7 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
                 inhaleDuration: result['inhale']!,
                 exhaleDuration: result['exhale']!,
                 rounds: rounds,
+                imagePath: _selectedImage,
               ),
             ),
           );
@@ -291,6 +337,7 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
                 inhaleDuration: inhale,
                 exhaleDuration: exhale,
                 rounds: rounds,
+                imagePath: _selectedImage,
               ),
             ),
           );
@@ -310,15 +357,6 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDescriptionText() {
-    return Text(
-      "Chest breathing focuses on expanding the upper ribs and lungs, "
-          "increasing alertness and energy. It can help you stay focused "
-          "during short breathing breaks or physical activity.",
-      style: TextStyle(fontSize: 15, height: 1.5),
     );
   }
 
@@ -357,17 +395,6 @@ class _ChestBreathingPageState extends State<ChestBreathingPage> {
             Expanded(child: Text(text, style: TextStyle(height: 1.4))),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildVideoPlayer() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: YoutubePlayer(
-        controller: _ytController,
-        aspectRatio: 16 / 9,
-        showVideoProgressIndicator: true,
       ),
     );
   }

@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:meditation_app/Breathing_Pages/boxbreathing_screen.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-
-
-// Import the modified TimerPickerWidget if you have one.
+import '../Breathing_Pages/boxbreathing_screen.dart';
 import '../common_widgets/timer_widget.dart';
 
-// A placeholder for a “Learn More” page about Box Breathing
 class BoxBreathingLearnMorePage extends StatelessWidget {
   const BoxBreathingLearnMorePage({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Learn More: Box Breathing"),
-      ),
+      appBar: AppBar(title: const Text("Learn More: Box Breathing")),
       body: const Center(
         child: Text(
           "Detailed information about Box Breathing goes here.",
@@ -31,370 +23,281 @@ enum DurationMode { rounds, minutes }
 
 class BoxBreathingPage extends StatefulWidget {
   const BoxBreathingPage({Key? key}) : super(key: key);
-
   @override
   _BoxBreathingPageState createState() => _BoxBreathingPageState();
 }
 
 class _BoxBreathingPageState extends State<BoxBreathingPage> {
-  // Selected technique from the dropdown
-  String? _selectedTechnique;
+  static const Color _brandColor = Color(0xff98bad5);
 
-  // Two predefined box breathing ratios: 4:4:4:4 and 4:4:6:4
-  final List<String> _breathingTechniques = [
-    '4:4:4:4 (Recommended)',
-    '4:4:6:4',
-  ];
+  String _selectedTechnique = '4:4:4:4';
+  final Map<String, String> _techniques = {
+    '4:4:4:4': '4:4:4:4 (Recommended)',
+    '4:4:6:4': '4:4:6:4',
+  };
 
-  // Example YouTube video link demonstrating Box Breathing
   final String _videoUrl = "https://www.youtube.com/watch?v=tEmt1Znux58";
-  late YoutubePlayerController _youtubePlayerController;
+  late YoutubePlayerController _ytController;
 
-  // Default mode: rounds
-  DurationMode _durationMode = DurationMode.rounds;
-
-  // The picker value represents either # of rounds or # of minutes. Default = 5.
-  double _pickerValue = 5.0;
+  bool _isMinutesMode = false;
+  int _selectedDuration = 5;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the YouTube player controller
-    _youtubePlayerController = YoutubePlayerController(
+    _ytController = YoutubePlayerController(
       initialVideoId: YoutubePlayer.convertUrlToId(_videoUrl)!,
-      flags: const YoutubePlayerFlags(
-        autoPlay: false,
-        mute: false,
-      ),
-    );
-
-    // Default technique (first in list)
-    _selectedTechnique = _breathingTechniques.isNotEmpty
-        ? _breathingTechniques[0]
-        : null;
-  }
-
-  /// Returns the total seconds for one round based on the selected technique.
-  int _getRoundSeconds() {
-    if (_selectedTechnique == null) return 0;
-
-    // Example: "4:4:4:4 (Recommended)" -> ratioPart = "4:4:4:4"
-    final ratioPart = _selectedTechnique!.split(" ")[0]; // e.g. "4:4:4:4"
-    final parts = ratioPart.split(":"); // e.g. ["4","4","4","4"]
-    if (parts.length != 4) return 0;
-
-    final inhale = int.tryParse(parts[0]) ?? 0;
-    final hold1 = int.tryParse(parts[1]) ?? 0;
-    final exhale = int.tryParse(parts[2]) ?? 0;
-    final hold2 = int.tryParse(parts[3]) ?? 0;
-
-    return inhale + hold1 + exhale + hold2;
-  }
-
-  /// Calculates total minutes from the selected number of rounds.
-  int _calculateTotalMinutesFromRounds() {
-    final secondsPerRound = _getRoundSeconds();
-    final totalSeconds = (secondsPerRound * _pickerValue).toInt();
-    return (totalSeconds / 60).round();
-  }
-
-  /// Calculates maximum rounds possible from the selected minutes.
-  int _calculateRoundsFromMinutes() {
-    final secondsPerRound = _getRoundSeconds();
-    if (secondsPerRound == 0) return 0;
-    final totalSeconds = (_pickerValue * 60).toInt();
-    return totalSeconds ~/ secondsPerRound;
-  }
-
-  /// Navigates to the actual Box Breathing exercise screen.
-  void _navigateToTechnique() {
-    if (_selectedTechnique == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a technique')),
-      );
-      return;
-    }
-
-    // Decide how many rounds based on user selection of Rounds vs Minutes.
-    int rounds;
-    if (_durationMode == DurationMode.rounds) {
-      rounds = _pickerValue.toInt();
-    } else {
-      rounds = _calculateRoundsFromMinutes();
-    }
-
-    // Parse the technique ratios.
-    final ratioPart = _selectedTechnique!.split(" ")[0]; // e.g. "4:4:4:4"
-    final parts = ratioPart.split(":");
-    if (parts.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid technique format')),
-      );
-      return;
-    }
-    final inhale = int.parse(parts[0]);
-    final hold1 = int.parse(parts[1]);
-    final exhale = int.parse(parts[2]);
-    final hold2 = int.parse(parts[3]);
-
-    // Navigate to the Box Breathing exercise screen.
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BoxBreathingScreen(
-          inhaleDuration: inhale,
-          hold1Duration: hold1,
-          exhaleDuration: exhale,
-          hold2Duration: hold2,
-          rounds: rounds,
-        ),
-      ),
+      flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
     );
   }
 
-  Widget _buildDurationModeToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Radio<DurationMode>(
-          value: DurationMode.rounds,
-          groupValue: _durationMode,
-          onChanged: (value) {
-            setState(() {
-              _durationMode = value!;
-              _pickerValue = 5.0;
-            });
-          },
-        ),
-        const Text("Rounds"),
-        Radio<DurationMode>(
-          value: DurationMode.minutes,
-          groupValue: _durationMode,
-          onChanged: (value) {
-            setState(() {
-              _durationMode = value!;
-              _pickerValue = 5.0;
-            });
-          },
-        ),
-        const Text("Minutes"),
-      ],
-    );
+  int get _roundSeconds {
+    final parts = _selectedTechnique.split(":").map(int.parse).toList();
+    return parts.fold(0, (sum, v) => sum + v);
   }
 
-  Widget _buildPicker() {
-    final List<int> options = _durationMode == DurationMode.rounds
-        ? List<int>.generate(20, (index) => (index + 1) * 5) // 5,10,15,...
-        : List<int>.generate(12, (index) => (index + 1) * 5); // 5,10,15,... minutes
-
-    final String titleLabel =
-    _durationMode == DurationMode.rounds ? "Select Rounds" : "Select Duration";
-    final String bottomLabel =
-    _durationMode == DurationMode.rounds ? "rounds" : "minutes";
-
-    return TimerPickerWidget(
-      durations: options,
-      initialDuration: _pickerValue.toInt(),
-      titleLabel: titleLabel,
-      bottomLabel: bottomLabel,
-      onDurationSelected: (selectedValue) {
-        setState(() {
-          _pickerValue = selectedValue.toDouble();
-        });
-      },
-    );
+  @override
+  void dispose() {
+    _ytController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final roundSeconds = _getRoundSeconds();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Box Breathing"),
         centerTitle: true,
+        elevation: 0,
+        toolbarHeight: 60,
+        backgroundColor: _brandColor,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Technique selection.
-            const Text(
-              "Select a Breathing Technique",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8.0),
-            DropdownButton<String>(
-              value: _selectedTechnique,
-              hint: const Text("Select a technique"),
-              isExpanded: true,
-              items: _breathingTechniques.map((technique) {
-                return DropdownMenuItem<String>(
-                  value: technique,
-                  child: Text(technique),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedTechnique = value;
-                  _pickerValue = 5.0; // Reset the picker when technique changes.
-                });
-              },
-            ),
-            const SizedBox(height: 16.0),
+            _buildSectionTitle("Breathing Technique"),
+            const SizedBox(height: 8),
+            _buildTechniqueButtons(),
+            const SizedBox(height: 24),
 
-            // Duration controls (only show if we can calculate a round's length).
-            if (roundSeconds > 0) ...[
-              _buildDurationModeToggle(),
-              const SizedBox(height: 8.0),
-              _buildPicker(),
-              const SizedBox(height: 8.0),
-              _durationMode == DurationMode.rounds
-                  ? Text(
-                "Total Time: ${_calculateTotalMinutesFromRounds()} minute(s)",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal,
-                ),
-                textAlign: TextAlign.center,
-              )
-                  : Text(
-                "Maximum Rounds Possible: ${_calculateRoundsFromMinutes()}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16.0),
-            ],
+            _buildSectionTitle("Duration"),
+            const SizedBox(height: 8),
+            _buildDurationControls(),
+            const SizedBox(height: 8),
+            _buildDurationHint(),
+            const SizedBox(height: 24),
 
-            // Explanation of Box Breathing.
-            const Text(
-              "What is Box Breathing?",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4.0),
-            const Text(
-              "Box Breathing is a simple yet powerful breathing technique that "
-                  "involves inhaling, holding, exhaling, and holding again for equal durations. "
-                  "This method helps calm the mind, reduce stress, and improve focus.",
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24.0),
+            _buildBeginButton(),
+            const SizedBox(height: 32),
 
-            // YouTube demonstration.
-            const Text(
-              "Watch a Demonstration",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8.0),
-            YoutubePlayer(
-              controller: _youtubePlayerController,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: Colors.teal,
-            ),
-            const SizedBox(height: 24.0),
+            _buildSectionTitle("About Box Breathing"),
+            _buildDescriptionText(),
+            const SizedBox(height: 24),
 
-            // Step-by-step instructions.
-            const Text(
-              "Step-by-Step Instructions",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16.0),
+            _buildSectionTitle("Video Demonstration"),
+            const SizedBox(height: 12),
+            _buildVideoPlayer(),
+            const SizedBox(height: 24),
 
-            // Example instruction cards.
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text("1", style: TextStyle(color: Colors.white)),
-                ),
-                title: const Text("Sit upright and relax your shoulders."),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text("2", style: TextStyle(color: Colors.white)),
-                ),
-                title: const Text(
-                  "Inhale deeply through your nose for the set count (e.g., 4 seconds).",
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text("3", style: TextStyle(color: Colors.white)),
-                ),
-                title: const Text(
-                  "Hold your breath for the same count (e.g., 4 seconds).",
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text("4", style: TextStyle(color: Colors.white)),
-                ),
-                title: const Text(
-                  "Exhale gently through your mouth for the same count (e.g., 4 seconds).",
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text("5", style: TextStyle(color: Colors.white)),
-                ),
-                title: const Text(
-                  "Hold your breath again for the same count (e.g., 4 seconds).",
-                ),
-              ),
-            ),
+            _buildSectionTitle("How To Practice"),
+            const SizedBox(height: 12),
+            ..._buildInstructionSteps(),
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      bottomNavigationBar: _buildLearnMoreButton(),
+    );
+  }
+
+  Widget _buildSectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+    );
+  }
+
+  Widget _buildTechniqueButtons() {
+    return Row(
+      children: _techniques.entries.map((e) {
+        final isSelected = _selectedTechnique == e.key;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected ? _brandColor : Colors.grey[200],
+                foregroundColor: isSelected ? Colors.white : Colors.black87,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
+              ),
+              onPressed: () => setState(() => _selectedTechnique = e.key),
+              child: Column(
+                children: [
+                  Text(e.key, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  if (e.key == '4:4:4:4') const SizedBox(height: 4),
+                  if (e.key == '4:4:4:4')
+                    Text('Recommended',
+                        style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.green)),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDurationControls() {
+    final options = _isMinutesMode
+        ? [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75];
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              onPressed: _navigateToTechnique,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              child: const Text("Begin"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BoxBreathingLearnMorePage(),
-                  ),
-                );
-              },
-              child: const Text("Learn More"),
-            ),
+            _buildToggleOption("Rounds", !_isMinutesMode),
+            const SizedBox(width: 20),
+            _buildToggleOption("Minutes", _isMinutesMode),
           ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: options.length,
+            itemBuilder: (_, i) {
+              final val = options[i];
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDuration = val),
+                child: Container(
+                  width: 80,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: _selectedDuration == val ? _brandColor : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text("$val", style: TextStyle(fontSize: 20, color: _selectedDuration == val ? Colors.white : Colors.black87)),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleOption(String text, bool isActive) {
+    return GestureDetector(
+      onTap: () => setState(() => _isMinutesMode = text == "Minutes"),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isActive ? _brandColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isActive ? _brandColor : Colors.grey.shade400),
+        ),
+        child: Text(text, style: TextStyle(color: isActive ? Colors.white : Colors.black87)),
+      ),
+    );
+  }
+
+  Widget _buildDurationHint() {
+    final seconds = _isMinutesMode ? _selectedDuration * 60 : _selectedDuration * _roundSeconds;
+    final hint = _isMinutesMode
+        ? "≈ ${(seconds / _roundSeconds).toStringAsFixed(0)} rounds"
+        : "≈ ${(seconds / 60).toStringAsFixed(1)} minutes";
+    return Text(hint, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600]));
+  }
+
+  Widget _buildBeginButton() {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: () {
+          final rounds = _isMinutesMode ? (_selectedDuration * 60) ~/ _roundSeconds : _selectedDuration;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BoxBreathingScreen(
+                inhaleDuration: int.parse(_selectedTechnique.split(":")[0]),
+                hold1Duration: int.parse(_selectedTechnique.split(":")[1]),
+                exhaleDuration: int.parse(_selectedTechnique.split(":")[2]),
+                hold2Duration: int.parse(_selectedTechnique.split(":")[3]),
+                rounds: rounds,
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _brandColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: const Text("BEGIN EXERCISE", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionText() {
+    return const Text(
+      "Box Breathing is a powerful technique of inhaling, holding, exhaling, and holding again for equal counts. "
+          "It calms the mind, reduces stress, and enhances focus.",
+      style: TextStyle(fontSize: 15, height: 1.5),
+    );
+  }
+
+  List<Widget> _buildInstructionSteps() {
+    final steps = [
+      "Inhale for the first count (e.g. 4 seconds).",
+      "Hold your breath for the second count.",
+      "Exhale for the third count.",
+      "Hold again for the fourth count.",
+      "Repeat this box cycle for your selected duration.",
+    ];
+    return List.generate(steps.length, (i) => _buildStepCard(i + 1, steps[i]));
+  }
+
+  Widget _buildStepCard(int num, String text) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(radius: 14, backgroundColor: _brandColor, child: Text("$num", style: const TextStyle(color: Colors.white, fontSize: 12))),
+            const SizedBox(width: 12),
+            Expanded(child: Text(text, style: const TextStyle(height: 1.4))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: YoutubePlayer(controller: _ytController, aspectRatio: 16 / 9, showVideoProgressIndicator: true),
+    );
+  }
+
+  Widget _buildLearnMoreButton() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: TextButton(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BoxBreathingLearnMorePage())),
+          child: const Text("Learn More →", style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w800)),
         ),
       ),
     );

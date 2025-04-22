@@ -158,7 +158,7 @@ Widget _buildSaveButton(BuildContext context, double inhale, double exhale, doub
         });
       },
       child: const Text(
-        'SAVE SETTINGS',
+        'BEGIN',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
