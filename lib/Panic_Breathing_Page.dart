@@ -22,6 +22,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   final int totalDurationSeconds = 300; // 5 minutes in seconds
   late int rounds;
   bool _isCalmAudioPlaying = false;
+  bool _showSkipButton = true;
 
   // Breathing durations (4:6 ratio)
   final int inhaleDuration = 4;
@@ -64,6 +65,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     try {
       setState(() {
         _isCalmAudioPlaying = true;
+        _showSkipButton = true;
         breathingText = "Stay calm and follow the meditation...";
       });
 
@@ -76,6 +78,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         if (mounted) {
           setState(() {
             _isCalmAudioPlaying = false;
+            _showSkipButton = false;
             breathingText = "Inhale";
             _currentPhase = "inhale";
           });
@@ -88,11 +91,27 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
       if (mounted) {
         setState(() {
           _isCalmAudioPlaying = false;
+          _showSkipButton = false;
           breathingText = "Inhale";
           _currentPhase = "inhale";
         });
         _startBreathingCycle();
       }
+    }
+  }
+
+  Future<void> _skipIntro() async {
+    if (_isCalmAudioPlaying) {
+      await _instructionPlayer.stop();
+      if (mounted) {
+        setState(() {
+          _isCalmAudioPlaying = false;
+          _showSkipButton = false;
+          breathingText = "Inhale";
+          _currentPhase = "inhale";
+        });
+      }
+      _startBreathingCycle();
     }
   }
 
@@ -194,8 +213,39 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text('Session Interrupted'),
-            content: const Text('Would you like to exit or restart?'),
+            title: const Text('Session Paused'),
+            content: const Text('Would you like to resume or exit?'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Resume'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                  if (isRunning) {
+                    _controller.forward();
+                  } else if (_isCalmAudioPlaying) {
+                    _playCalmAudio();
+                  }
+                },
+              ),
+              TextButton(
+                child: const Text('Exit', style: TextStyle(color: Colors.red)),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldExit == true && mounted) {
+        Navigator.of(context).pop();
+      }
+    } else {
+      bool? shouldExit = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Session Options'),
+            content: const Text('Would you like to restart or exit?'),
             actions: <Widget>[
               TextButton(
                 child: const Text('Restart'),
@@ -216,8 +266,6 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
       if (shouldExit == true && mounted) {
         Navigator.of(context).pop();
       }
-    } else {
-      _restartSession();
     }
   }
 
@@ -319,12 +367,26 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         elevation: 10,
       ),
       icon: Icon(
-        isRunning || _isCalmAudioPlaying ? Icons.stop : Icons.play_arrow,
+        isRunning || _isCalmAudioPlaying ? Icons.pause : Icons.play_arrow,
         color: Colors.white,
       ),
       label: Text(
-        isRunning || _isCalmAudioPlaying ? "Stop" : "Restart",
+        isRunning || _isCalmAudioPlaying ? "Pause" : "Start",
         style: const TextStyle(fontSize: 20, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return TextButton(
+      onPressed: _skipIntro,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white70,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      ),
+      child: const Text(
+        "Skip Intro",
+        style: TextStyle(fontSize: 16),
       ),
     );
   }
@@ -412,6 +474,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
               _buildBreathingImage(),
               const SizedBox(height: 30),
               _buildControlButton(),
+              if (_showSkipButton) _buildSkipButton(),
               const SizedBox(height: 20),
               if (!_isCalmAudioPlaying) _buildTimeProgressBar(),
             ],

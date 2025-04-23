@@ -37,6 +37,8 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   File? _profileImage;
   String? _profileImageUrl;
 
+  late List<Widget> _screens;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +53,13 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     _controller.forward();
+    _screens = [
+      const MeditationScreen(),
+      CoursesPage(),
+      ProgressScreen(),
+      MeditationProfile(),
+
+    ];
     _loadUserData();
   }
 
@@ -60,36 +69,24 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  final List<Widget> _screens = [
-    const MeditationScreen(),
-    CoursesPage(),
-    ProgressScreen(),
-    MeditationProfile(),
-  ];
-
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
 
-    // Load saved image path for this user from SharedPreferences
     if (user != null) {
       final prefs = await SharedPreferences.getInstance();
       final savedPath = prefs.getString('profileImage_${user.uid}');
       if (savedPath != null && File(savedPath).existsSync()) {
-        setState(() {
-          _profileImage = File(savedPath);
-        });
+        _profileImage = File(savedPath);
       }
-    }
 
-    if (user != null) {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
       if (doc.exists && doc.data() != null) {
+        _userName = doc.get('name') ?? 'User';
+        _profileImageUrl = user.photoURL;
         setState(() {
-          _userName = doc.get('name') ?? 'User';
-          _profileImageUrl = user.photoURL;
           _screens[0] = MeditationScreen(
             userName: _userName,
             profileImage: _profileImage,
@@ -105,7 +102,6 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      // Save picked image path under this user's key
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -150,6 +146,7 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -162,59 +159,36 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
           },
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          child: BottomAppBar(
-            color: Colors.white,
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 8.0,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.spa,
-                        color: _currentIndex == 0 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(0),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.school,
-                        color: _currentIndex == 1 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(1),
-                  ),
-                  const SizedBox(width: 48),
-                  IconButton(
-                    icon: Icon(Icons.bar_chart,
-                        color: _currentIndex == 2 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(2),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.person,
-                        color: _currentIndex == 3 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(3),
-                  ),
-                ],
-              ),
-            ),
+      bottomNavigationBar: NavigationBar(
+        height: 70,
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _onItemTapped,
+        backgroundColor: Colors.white,
+        indicatorColor: Colors.teal.shade100.withOpacity(0.3),
+        elevation: 10,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.spa_outlined),
+            selectedIcon: Icon(Icons.spa),
+            label: 'Relax',
           ),
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school),
+            label: 'Courses',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Progress',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handlePanicButton,
@@ -224,7 +198,7 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
           borderRadius: BorderRadius.circular(60),
           side: const BorderSide(color: Colors.white, width: 3),
         ),
-        child: const Icon(Icons.emergency, color: Colors.white, size: 35),
+        child: const Icon(Icons.emergency, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
