@@ -23,19 +23,23 @@ class BilateralScreen extends StatefulWidget {
 class _BilateralScreenState extends State<BilateralScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late AudioPlayer _inhalePlayer;
-  late AudioPlayer _exhalePlayer;
-  late AudioPlayer _calmAudioPlayer;
+  late AudioPlayer _audioPlayer; // Single player for all audio
   bool isRunning = false;
-  bool isAudioPlaying = true; // Audio on by default
-  bool _isCalmAudioPlaying = false;
+  bool isAudioPlaying = true;
   String breathingText = "Starting Session...";
   int _currentRound = 0;
   String _currentPhase = "prepare";
 
+  // Guide states
+  bool _isGuide1Playing = false;
+  bool _isGuide2Playing = false;
+  bool _showSkipGuide1 = false;
+  late Timer _skipButtonTimer;
+
   late final AssetSource _inhaleSound;
   late final AssetSource _exhaleSound;
-  late final AssetSource _calmAudioSound;
+  late final AssetSource _guide1Sound;
+  late final AssetSource _guide2Sound;
 
   late final double _inhaleFraction;
   late final double _gapFraction;
@@ -46,18 +50,16 @@ class _BilateralScreenState extends State<BilateralScreen>
 
     _inhaleSound = AssetSource('../assets/music/inhale_bell1.mp3');
     _exhaleSound = AssetSource('../assets/music/exhale_bell1.mp3');
-    _calmAudioSound = AssetSource('../assets/music/guide_calm.mp3');
+    _guide1Sound = AssetSource('../assets/music/guide-calm1.mp3');
+    _guide2Sound = AssetSource('../assets/music/guide_calm2.mp3');
 
     final totalDuration = widget.inhaleDuration + 0.10 + widget.exhaleDuration;
     _inhaleFraction = widget.inhaleDuration / totalDuration;
     _gapFraction = (widget.inhaleDuration + 0.10) / totalDuration;
 
-    _inhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-    _exhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-    _calmAudioPlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-
-    _preloadAudio();
-    _playCalmAudio();
+    _audioPlayer = AudioPlayer()
+      ..setReleaseMode(ReleaseMode.stop)
+      ..setVolume(isAudioPlaying ? 1.0 : 0.0);
 
     _controller = AnimationController(
       duration: Duration(seconds: totalDuration.toInt()),
@@ -66,22 +68,69 @@ class _BilateralScreenState extends State<BilateralScreen>
 
     _controller.addListener(_handleAnimationProgress);
     _controller.addStatusListener(_handleAnimationStatus);
+
+    _startGuides();
   }
 
-  Future<void> _playCalmAudio() async {
+  Future<void> _startGuides() async {
+    await _playGuide1();
+  }
+
+  Future<void> _playGuide1() async {
     try {
       setState(() {
-        _isCalmAudioPlaying = true;
-        breathingText = "Relax and Breathe";
+        _isGuide1Playing = true;
+        breathingText = "Relax and Prepare";
+        _showSkipGuide1 = false;
       });
 
-      await _calmAudioPlayer.play(_calmAudioSound);
+      // Show skip button after 3 seconds
+      _skipButtonTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted && _isGuide1Playing) {
+          setState(() => _showSkipGuide1 = true);
+        }
+      });
 
-      _calmAudioPlayer.onPlayerComplete.listen((_) {
+      await _audioPlayer.stop(); // Stop any previous audio
+      await _audioPlayer.play(_guide1Sound);
+
+      _audioPlayer.onPlayerComplete.listen((_) {
+        if (mounted) {
+          _skipButtonTimer.cancel();
+          _playGuide2();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error playing Guide 1: $e');
+      _playGuide2();
+    }
+  }
+
+  Future<void> _skipGuide1() async {
+    if (!_isGuide1Playing) return;
+
+    await _audioPlayer.stop();
+    _skipButtonTimer.cancel();
+    if (mounted) _playGuide2();
+  }
+
+  Future<void> _playGuide2() async {
+    try {
+      setState(() {
+        _isGuide1Playing = false;
+        _isGuide2Playing = true;
+        breathingText = "    Focus on\nYour Breathing";
+        _showSkipGuide1 = false;
+      });
+
+      await _audioPlayer.stop(); // Stop any previous audio
+      await _audioPlayer.play(_guide2Sound);
+
+      _audioPlayer.onPlayerComplete.listen((_) {
         if (mounted) {
           setState(() {
-            _isCalmAudioPlaying = false;
-            isRunning = true; // Start breathing automatically
+            _isGuide2Playing = false;
+            isRunning = true;
             breathingText = "Inhale";
             _currentPhase = "inhale";
           });
@@ -89,11 +138,10 @@ class _BilateralScreenState extends State<BilateralScreen>
         }
       });
     } catch (e) {
-      debugPrint('Error playing calm audio: $e');
-      // If calm audio fails, start breathing immediately
+      debugPrint('Error playing Guide 2: $e');
       if (mounted) {
         setState(() {
-          _isCalmAudioPlaying = false;
+          _isGuide2Playing = false;
           isRunning = true;
           breathingText = "Inhale";
           _currentPhase = "inhale";
@@ -106,9 +154,10 @@ class _BilateralScreenState extends State<BilateralScreen>
   Future<void> _preloadAudio() async {
     try {
       await Future.wait([
-        _inhalePlayer.setSource(_inhaleSound),
-        _exhalePlayer.setSource(_exhaleSound),
-        _calmAudioPlayer.setSource(_calmAudioSound),
+        _audioPlayer.setSource(_guide1Sound),
+        _audioPlayer.setSource(_guide2Sound),
+        _audioPlayer.setSource(_inhaleSound),
+        _audioPlayer.setSource(_exhaleSound),
       ]);
     } catch (e) {
       debugPrint('Error preloading audio: $e');
@@ -116,7 +165,7 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   void _handleAnimationProgress() {
-    if (_isCalmAudioPlaying) return;
+    if (_isGuide1Playing || _isGuide2Playing) return;
 
     double progress = _controller.value;
     String newPhase;
@@ -131,7 +180,7 @@ class _BilateralScreenState extends State<BilateralScreen>
 
     if (newPhase != _currentPhase) {
       _currentPhase = newPhase;
-      if (isAudioPlaying) {
+      if (isAudioPlaying && isRunning) {
         _playPhaseSound(_currentPhase);
       }
 
@@ -142,7 +191,7 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   void _handleAnimationStatus(AnimationStatus status) async {
-    if (_isCalmAudioPlaying) return;
+    if (_isGuide1Playing || _isGuide2Playing) return;
 
     if (status == AnimationStatus.completed) {
       _currentRound++;
@@ -157,30 +206,26 @@ class _BilateralScreenState extends State<BilateralScreen>
           isRunning = false;
           breathingText = "Complete";
         });
-        await _stopAllAudio();
+        await _audioPlayer.stop();
       }
     }
   }
 
   Future<void> _playPhaseSound(String phase) async {
     try {
+      await _audioPlayer.stop(); // Stop any previous sound
       if (phase == "inhale") {
-        await _exhalePlayer.stop();
-        await _inhalePlayer.resume();
+        await _audioPlayer.play(_inhaleSound);
       } else if (phase == "exhale") {
-        await _inhalePlayer.stop();
-        await _exhalePlayer.resume();
-      } else {
-        await _inhalePlayer.stop();
-        await _exhalePlayer.stop();
+        await _audioPlayer.play(_exhaleSound);
       }
     } catch (e) {
-      debugPrint('Error playing sound: $e');
+      debugPrint('Error playing phase sound: $e');
     }
   }
 
   void _startBreathingCycle() {
-    if (_isCalmAudioPlaying) return;
+    if (_isGuide1Playing || _isGuide2Playing) return;
 
     setState(() {
       breathingText = "Inhale";
@@ -193,43 +238,25 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Future<void> toggleBreathing() async {
-    if (_isCalmAudioPlaying) return;
+    if (_isGuide1Playing || _isGuide2Playing) return;
 
     if (isRunning) {
       _controller.stop();
-      await _stopAllAudio();
-      setState(() {
-        isRunning = false;
-      });
+      await _audioPlayer.stop();
+      setState(() => isRunning = false);
     } else {
       if (_currentRound >= widget.rounds) {
         _currentRound = 0;
       }
-      setState(() {
-        isRunning = true;
-      });
+      setState(() => isRunning = true);
       _startBreathingCycle();
     }
   }
 
-  Future<void> _stopAllAudio() async {
-    await Future.wait([
-      _inhalePlayer.stop(),
-      _exhalePlayer.stop(),
-      _calmAudioPlayer.stop(),
-    ]);
-  }
-
   Future<void> toggleAudio() async {
     final newVolume = isAudioPlaying ? 0.0 : 1.0;
-    await Future.wait([
-      _inhalePlayer.setVolume(newVolume),
-      _exhalePlayer.setVolume(newVolume),
-      _calmAudioPlayer.setVolume(newVolume),
-    ]);
-    setState(() {
-      isAudioPlaying = !isAudioPlaying;
-    });
+    await _audioPlayer.setVolume(newVolume);
+    setState(() => isAudioPlaying = !isAudioPlaying);
   }
 
   Widget _buildTextDisplay(String text) {
@@ -248,6 +275,7 @@ class _BilateralScreenState extends State<BilateralScreen>
       ),
       child: Text(
         text,
+        textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 30,
           fontWeight: FontWeight.bold,
@@ -292,8 +320,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Widget _buildControlButtons() {
-    if (_isCalmAudioPlaying) {
-      return const SizedBox.shrink(); // Hide controls during calm audio
+    if (_isGuide1Playing || _isGuide2Playing) {
+      return const SizedBox.shrink();
     }
 
     if (_currentRound >= widget.rounds) {
@@ -340,8 +368,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Widget _buildTimeProgressBar() {
-    if (_isCalmAudioPlaying) {
-      return const SizedBox.shrink(); // Hide timer during calm audio
+    if (_isGuide1Playing || _isGuide2Playing) {
+      return const SizedBox.shrink();
     }
 
     return AnimatedBuilder(
@@ -382,9 +410,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   @override
   void dispose() {
     _controller.dispose();
-    _inhalePlayer.dispose();
-    _exhalePlayer.dispose();
-    _calmAudioPlayer.dispose();
+    _audioPlayer.dispose();
+    _skipButtonTimer.cancel();
     super.dispose();
   }
 
@@ -444,6 +471,24 @@ class _BilateralScreenState extends State<BilateralScreen>
               onPressed: toggleAudio,
             ),
           ),
+          if (_showSkipGuide1)
+            Positioned(
+              bottom: 100,
+              right: 20,
+              child: ElevatedButton(
+                onPressed: _skipGuide1,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  "Skip Guide",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
         ],
       ),
     );

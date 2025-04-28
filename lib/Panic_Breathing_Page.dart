@@ -159,10 +159,16 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     if (status == AnimationStatus.completed) {
       _currentRound++;
       if (_currentRound < rounds) {
+        // Reset to inhale for next round
+        setState(() {
+          _currentPhase = "inhale";
+          breathingText = "Inhale";
+        });
         _controller.reset();
         await Future.delayed(const Duration(milliseconds: 2));
         if (isRunning && mounted) {
-          _startBreathingCycle();
+          _controller.forward();
+          _playPhaseSound(_currentPhase);
         }
       } else {
         if (mounted) {
@@ -217,13 +223,18 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
       // Skip the intro
       await _skipIntro();
     } else {
-      // Resume the session
+      // Resume the session - always start from inhale
       if (_currentRound >= rounds) {
         // If session was complete, restart it
         _restartSession();
       } else {
-        // Otherwise resume from where we left off
-        setState(() => isRunning = true);
+        // Reset to inhale phase when resuming
+        setState(() {
+          isRunning = true;
+          _currentPhase = "inhale";
+          breathingText = "Inhale";
+        });
+        _controller.reset();
         _controller.forward();
         _playPhaseSound(_currentPhase);
       }

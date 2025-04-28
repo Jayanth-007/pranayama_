@@ -224,7 +224,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
         context,
         initialInhale: _customInhale,
         initialExhale: _customExhale,
-        initialHold: 0,
+        initialHold: _customExhale,
       );
       if (result != null && mounted) {
         setState(() {

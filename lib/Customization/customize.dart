@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 Future<Map<String, int>?> showCustomizationDialog(
     BuildContext context, {
       required int initialInhale,
-      required int initialExhale,
-      required int initialHold,
+      required int initialExhale, required int initialHold,
     }) async {
   double inhale = initialInhale.toDouble();
   double exhale = initialExhale.toDouble();
-  double hold = initialHold.toDouble();
 
   return await showModalBottomSheet<Map<String, int>>(
     context: context,
@@ -57,16 +55,8 @@ Future<Map<String, int>?> showCustomizationDialog(
                           onChanged: (value) => setState(() => exhale = value),
                           context: context,
                         ),
-                        const SizedBox(height: 24),
-                        _buildModernSlider(
-                          label: 'Hold',
-                          value: hold,
-                          onChanged: (value) => setState(() => hold = value),
-                          context: context,
-                          isHold: true,
-                        ),
                         const SizedBox(height: 32),
-                        _buildSaveButton(context, inhale, exhale, hold),
+                        _buildSaveButton(context, inhale, exhale),
                       ],
                     );
                   },
@@ -104,11 +94,7 @@ Widget _buildModernSlider({
   required String label,
   required double value,
   required ValueChanged<double> onChanged,
-  bool isHold = false,
 }) {
-  final double minValue = isHold ? 0 : 1;
-  final int divisions = isHold ? 10 : 9;
-
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -146,14 +132,12 @@ Widget _buildModernSlider({
           overlayColor: Colors.blue.withOpacity(0.2),
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
           overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
-          valueIndicatorColor: Colors.blueAccent,
-          valueIndicatorTextStyle: const TextStyle(color: Colors.white),
         ),
         child: Slider(
           value: value,
-          min: minValue,
+          min: 1,
           max: 10,
-          divisions: divisions,
+          divisions: 9,
           label: '${value.toInt()}s',
           onChanged: onChanged,
         ),
@@ -162,7 +146,7 @@ Widget _buildModernSlider({
   );
 }
 
-Widget _buildSaveButton(BuildContext context, double inhale, double exhale, double hold) {
+Widget _buildSaveButton(BuildContext context, double inhale, double exhale) {
   return SizedBox(
     width: double.infinity,
     child: ElevatedButton(
@@ -178,7 +162,7 @@ Widget _buildSaveButton(BuildContext context, double inhale, double exhale, doub
         Navigator.pop(context, {
           'inhale': inhale.toInt(),
           'exhale': exhale.toInt(),
-          'hold': hold.toInt(),
+          'hold': 0, // always returning 0
         });
       },
       child: const Text(
