@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:meditation_app/Breathing_Pages/abdominal_46.dart';
 import 'package:meditation_app/Instruction/instruction_abdo.dart';
 import 'package:meditation_app/Instruction/instruction_bhramari.dart';
 import 'package:meditation_app/Instruction/instruction_chandra.dart';

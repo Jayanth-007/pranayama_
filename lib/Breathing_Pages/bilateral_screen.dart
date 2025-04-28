@@ -25,14 +25,17 @@ class _BilateralScreenState extends State<BilateralScreen>
   late AnimationController _controller;
   late AudioPlayer _inhalePlayer;
   late AudioPlayer _exhalePlayer;
+  late AudioPlayer _calmAudioPlayer;
   bool isRunning = false;
-  bool isAudioPlaying = false;
-  String breathingText = "Get Ready";
+  bool isAudioPlaying = true; // Audio on by default
+  bool _isCalmAudioPlaying = false;
+  String breathingText = "Starting Session...";
   int _currentRound = 0;
   String _currentPhase = "prepare";
 
   late final AssetSource _inhaleSound;
   late final AssetSource _exhaleSound;
+  late final AssetSource _calmAudioSound;
 
   late final double _inhaleFraction;
   late final double _gapFraction;
@@ -43,6 +46,7 @@ class _BilateralScreenState extends State<BilateralScreen>
 
     _inhaleSound = AssetSource('../assets/music/inhale_bell1.mp3');
     _exhaleSound = AssetSource('../assets/music/exhale_bell1.mp3');
+    _calmAudioSound = AssetSource('../assets/music/guide_calm.mp3');
 
     final totalDuration = widget.inhaleDuration + 0.10 + widget.exhaleDuration;
     _inhaleFraction = widget.inhaleDuration / totalDuration;
@@ -50,8 +54,10 @@ class _BilateralScreenState extends State<BilateralScreen>
 
     _inhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
     _exhalePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+    _calmAudioPlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
 
     _preloadAudio();
+    _playCalmAudio();
 
     _controller = AnimationController(
       duration: Duration(seconds: totalDuration.toInt()),
@@ -62,11 +68,47 @@ class _BilateralScreenState extends State<BilateralScreen>
     _controller.addStatusListener(_handleAnimationStatus);
   }
 
+  Future<void> _playCalmAudio() async {
+    try {
+      setState(() {
+        _isCalmAudioPlaying = true;
+        breathingText = "Relax and Breathe";
+      });
+
+      await _calmAudioPlayer.play(_calmAudioSound);
+
+      _calmAudioPlayer.onPlayerComplete.listen((_) {
+        if (mounted) {
+          setState(() {
+            _isCalmAudioPlaying = false;
+            isRunning = true; // Start breathing automatically
+            breathingText = "Inhale";
+            _currentPhase = "inhale";
+          });
+          _startBreathingCycle();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error playing calm audio: $e');
+      // If calm audio fails, start breathing immediately
+      if (mounted) {
+        setState(() {
+          _isCalmAudioPlaying = false;
+          isRunning = true;
+          breathingText = "Inhale";
+          _currentPhase = "inhale";
+        });
+        _startBreathingCycle();
+      }
+    }
+  }
+
   Future<void> _preloadAudio() async {
     try {
       await Future.wait([
         _inhalePlayer.setSource(_inhaleSound),
         _exhalePlayer.setSource(_exhaleSound),
+        _calmAudioPlayer.setSource(_calmAudioSound),
       ]);
     } catch (e) {
       debugPrint('Error preloading audio: $e');
@@ -74,6 +116,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   void _handleAnimationProgress() {
+    if (_isCalmAudioPlaying) return;
+
     double progress = _controller.value;
     String newPhase;
 
@@ -98,6 +142,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   void _handleAnimationStatus(AnimationStatus status) async {
+    if (_isCalmAudioPlaying) return;
+
     if (status == AnimationStatus.completed) {
       _currentRound++;
       if (_currentRound < widget.rounds) {
@@ -134,6 +180,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   void _startBreathingCycle() {
+    if (_isCalmAudioPlaying) return;
+
     setState(() {
       breathingText = "Inhale";
       _currentPhase = "inhale";
@@ -145,6 +193,8 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Future<void> toggleBreathing() async {
+    if (_isCalmAudioPlaying) return;
+
     if (isRunning) {
       _controller.stop();
       await _stopAllAudio();
@@ -166,6 +216,7 @@ class _BilateralScreenState extends State<BilateralScreen>
     await Future.wait([
       _inhalePlayer.stop(),
       _exhalePlayer.stop(),
+      _calmAudioPlayer.stop(),
     ]);
   }
 
@@ -174,6 +225,7 @@ class _BilateralScreenState extends State<BilateralScreen>
     await Future.wait([
       _inhalePlayer.setVolume(newVolume),
       _exhalePlayer.setVolume(newVolume),
+      _calmAudioPlayer.setVolume(newVolume),
     ]);
     setState(() {
       isAudioPlaying = !isAudioPlaying;
@@ -181,32 +233,27 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Widget _buildTextDisplay(String text) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.black38.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.black38.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black,
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        );
-      },
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 
@@ -245,6 +292,10 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Widget _buildControlButtons() {
+    if (_isCalmAudioPlaying) {
+      return const SizedBox.shrink(); // Hide controls during calm audio
+    }
+
     if (_currentRound >= widget.rounds) {
       return ElevatedButton(
         onPressed: () {
@@ -259,7 +310,8 @@ class _BilateralScreenState extends State<BilateralScreen>
           backgroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30)),
+            borderRadius: BorderRadius.circular(30),
+          ),
           elevation: 10,
         ),
         child: const Text(
@@ -274,7 +326,8 @@ class _BilateralScreenState extends State<BilateralScreen>
           backgroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30)),
+            borderRadius: BorderRadius.circular(30),
+          ),
           elevation: 10,
         ),
         icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
@@ -287,6 +340,10 @@ class _BilateralScreenState extends State<BilateralScreen>
   }
 
   Widget _buildTimeProgressBar() {
+    if (_isCalmAudioPlaying) {
+      return const SizedBox.shrink(); // Hide timer during calm audio
+    }
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -327,6 +384,7 @@ class _BilateralScreenState extends State<BilateralScreen>
     _controller.dispose();
     _inhalePlayer.dispose();
     _exhalePlayer.dispose();
+    _calmAudioPlayer.dispose();
     super.dispose();
   }
 

@@ -204,68 +204,56 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     _playPhaseSound(_currentPhase);
   }
 
-  Future<void> _stopSession() async {
-    if (isRunning || _isCalmAudioPlaying) {
+  Future<void> _toggleSession() async {
+    if (isRunning) {
+      // Pause the session
       _controller.stop();
       await _stopAllAudio();
-
-      bool? shouldExit = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Session Paused'),
-            content: const Text('Would you like to resume or exit?'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Resume'),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                  if (isRunning) {
-                    _controller.forward();
-                  } else if (_isCalmAudioPlaying) {
-                    _playCalmAudio();
-                  }
-                },
-              ),
-              TextButton(
-                child: const Text('Exit', style: TextStyle(color: Colors.red)),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (shouldExit == true && mounted) {
-        Navigator.of(context).pop();
-      }
+      setState(() {
+        isRunning = false;
+        breathingText = "Paused";
+      });
+    } else if (_isCalmAudioPlaying) {
+      // Skip the intro
+      await _skipIntro();
     } else {
-      bool? shouldExit = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Session Options'),
-            content: const Text('Would you like to restart or exit?'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Restart'),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                  _restartSession();
-                },
-              ),
-              TextButton(
-                child: const Text('Exit', style: TextStyle(color: Colors.red)),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (shouldExit == true && mounted) {
-        Navigator.of(context).pop();
+      // Resume the session
+      if (_currentRound >= rounds) {
+        // If session was complete, restart it
+        _restartSession();
+      } else {
+        // Otherwise resume from where we left off
+        setState(() => isRunning = true);
+        _controller.forward();
+        _playPhaseSound(_currentPhase);
       }
+    }
+  }
+
+  Future<void> _exitSession() async {
+    bool? shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Exit Session?'),
+          content: const Text('Are you sure you want to exit the breathing session?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Exit', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldExit == true && mounted) {
+      await _stopAllAudio();
+      Navigator.of(context).pop();
     }
   }
 
@@ -282,11 +270,15 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   }
 
   Future<void> _stopAllAudio() async {
-    await Future.wait([
-      _instructionPlayer.stop(),
-      _inhalePlayer.stop(),
-      _exhalePlayer.stop(),
-    ]);
+    try {
+      await Future.wait([
+        _instructionPlayer.stop(),
+        _inhalePlayer.stop(),
+        _exhalePlayer.stop(),
+      ]);
+    } catch (e) {
+      debugPrint('Error stopping audio: $e');
+    }
   }
 
   Widget _buildTextDisplay(String text) {
@@ -356,8 +348,25 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   }
 
   Widget _buildControlButton() {
+    IconData icon;
+    String label;
+
+    if (isRunning) {
+      icon = Icons.pause;
+      label = "Pause";
+    } else if (_isCalmAudioPlaying) {
+      icon = Icons.skip_next;
+      label = "Skip";
+    } else if (_currentRound >= rounds) {
+      icon = Icons.replay;
+      label = "Restart";
+    } else {
+      icon = Icons.play_arrow;
+      label = "Resume";
+    }
+
     return ElevatedButton.icon(
-      onPressed: _stopSession,
+      onPressed: _toggleSession,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blueGrey[700],
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
@@ -366,12 +375,9 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         ),
         elevation: 10,
       ),
-      icon: Icon(
-        isRunning || _isCalmAudioPlaying ? Icons.pause : Icons.play_arrow,
-        color: Colors.white,
-      ),
+      icon: Icon(icon, color: Colors.white),
       label: Text(
-        isRunning || _isCalmAudioPlaying ? "Pause" : "Start",
+        label,
         style: const TextStyle(fontSize: 20, color: Colors.white),
       ),
     );
@@ -385,7 +391,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       ),
       child: const Text(
-        "Skip Intro",
+        "",
         style: TextStyle(fontSize: 16),
       ),
     );
@@ -462,6 +468,12 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         backgroundColor: Colors.blueGrey[800],
         elevation: 0,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: _exitSession,
+          ),
+        ],
       ),
       body: Container(
         color: const Color(0xFF131313),

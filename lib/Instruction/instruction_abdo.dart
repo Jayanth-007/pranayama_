@@ -18,6 +18,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   String _selectedSound = 'None';
   int _customInhale = 4;
   int _customExhale = 6;
+  final ScrollController _soundController = ScrollController();
 
   // Constants
   static const _imageOptions = [
@@ -28,16 +29,16 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
 
   static const _soundOptions = [
     {'name': 'None', 'path': 'assets/images/sound_none.png'},
-    {'name': 'Soothing Sitar', 'path': 'assets/images/sound_sitar.png'},
-    {'name': 'Mountain Echoes', 'path': 'assets/images/sound_mountain.png'},
-    {'name': 'Rest Waves', 'path': 'assets/images/sound_waves.png'},
-    {'name': 'Sacred AUM', 'path': 'assets/images/sound_om.png'},
-    {'name': 'Himalayan Gong', 'path': 'assets/images/sound_gong.png'},
+    {'name': 'Sitar', 'path': 'assets/images/sound_sitar.png'},
+    {'name': 'Echoes', 'path': 'assets/images/sound_mountain.png'},
+    {'name': 'Waves', 'path': 'assets/images/sound_waves.png'},
+    {'name': 'AUM', 'path': 'assets/images/sound_om.png'},
+    {'name': 'Gong', 'path': 'assets/images/sound_gong.png'},
   ];
 
   static const _techniques = [
     {'value': '4:6', 'label': 'Recommended', 'inhale': 4, 'exhale': 6},
-    {'value': '4:8', 'label': 'Extended Exhale', 'inhale': 4, 'exhale': 8},
+    {'value': '4:8', 'label': 'Extended', 'inhale': 4, 'exhale': 8},
     {'value': '5:5', 'label': 'Balanced', 'inhale': 5, 'exhale': 5},
     {'value': 'custom', 'label': 'Custom', 'inhale': 0, 'exhale': 0},
   ];
@@ -62,63 +63,59 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   }
 
   @override
+  void dispose() {
+    _soundController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-        systemNavigationBarColor: Theme.of(context).colorScheme.surface,
-      ),
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: _buildAppBar(),
-        body: _buildContent(),
-      ),
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: _buildContent(),
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       title: Text(
         'Abdominal Breathing',
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          color: Colors.white,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
+          color: Colors.blueGrey[900],
         ),
       ),
       centerTitle: false,
       elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: Colors.transparent,
-      iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      iconTheme: IconThemeData(color: Colors.blueGrey[800]),
     );
   }
 
   Widget _buildContent() {
-    return CustomScrollView(
+    return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 88, 24, 24),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildHeader(),
-              const SizedBox(height: 32),
-              _buildTechniqueSection(),
-              const SizedBox(height: 24),
-              _buildDurationSection(),
-              const SizedBox(height: 24),
-              _buildVisualizationSection(),
-              const SizedBox(height: 24),
-              _buildSoundSection(),
-              const SizedBox(height: 32),
-              _buildBeginButton(),
-              const SizedBox(height: 24),
-              _buildPracticeGuide(),
-            ]),
-          ),
-        ),
-      ],
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 32),
+          _buildTechniqueSection(),
+          const SizedBox(height: 24),
+          _buildDurationSection(),
+          const SizedBox(height: 24),
+          _buildVisualizationSection(),
+          const SizedBox(height: 24),
+          _buildSoundSection(),
+          const SizedBox(height: 32),
+          _buildBeginButton(),
+          const SizedBox(height: 24),
+          _buildPracticeGuide(),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
@@ -128,7 +125,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       children: [
         Text(
           'Prepare Your Session',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: Colors.blueGrey[900],
           ),
@@ -136,7 +133,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
         const SizedBox(height: 8),
         Text(
           'Customize your abdominal breathing experience',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.blueGrey[600],
           ),
         ),
@@ -149,14 +146,14 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('BREATHING PATTERN'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 1.8,
+          childAspectRatio: 2.2, // Increased aspect ratio for better spacing
           children: _techniques.map(_buildTechniqueOption).toList(),
         ),
         if (_selectedTechnique == 'custom') ...[
@@ -168,14 +165,15 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   }
 
   Widget _buildTechniqueOption(Map<String, dynamic> technique) {
-    final isSelected = _selectedTechnique == technique['value'];
-    final isRecommended = technique['value'] == '4:6';
+    final bool isSelected = _selectedTechnique == technique['value'];
+    final bool isRecommended = technique['value'] == '4:6';
 
     return GestureDetector(
       onTap: () => _handleTechniqueSelection(technique),
       child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[600] : Colors.white,
+          color: isSelected ? Colors.blue[50] : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
@@ -183,28 +181,22 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                 : isRecommended
                 ? Colors.amber[600]!
                 : Colors.grey[300]!,
-            width: isRecommended ? 2 : 1.5,
+            width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: [
-            if (isSelected || isRecommended)
-              BoxShadow(
-                color: (isSelected ? Colors.blue : Colors.amber)!
-                    .withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-          ],
         ),
-        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (isRecommended) _buildRecommendedBadge(),
-            if (isRecommended) const SizedBox(height: 4),
+            if (isRecommended) ...[
+
+              const SizedBox(height: 4),
+            ],
             Text(
               technique['label'],
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: isSelected ? Colors.white : Colors.blueGrey[800],
+                color: isSelected ? Colors.blue[800] : Colors.blueGrey[800],
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -213,9 +205,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
               Text(
                 '${technique['inhale']}:${technique['exhale']}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.9)
-                      : Colors.blueGrey[600],
+                  color: isSelected ? Colors.blue[600] : Colors.blueGrey[600],
                 ),
               ),
             ],
@@ -225,23 +215,8 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
     );
   }
 
-  Widget _buildRecommendedBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.amber[50],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        'RECOMMENDED',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.amber[800],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
+
+
 
   Future<void> _handleTechniqueSelection(Map<String, dynamic> technique) async {
     if (technique['value'] == 'custom') {
@@ -271,7 +246,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.blue[200]!,
-          width: 1.5,
+          width: 1,
         ),
       ),
       child: Row(
@@ -281,7 +256,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
             child: Icon(Icons.compare_arrows_rounded,
-                color: Colors.blueGrey, size: 28),
+                color: Colors.blueGrey, size: 24),
           ),
           _buildBreathPhase('EXHALE', '$_customExhale sec'),
         ],
@@ -316,9 +291,9 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('SESSION DURATION'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         SizedBox(
-          height: 60,
+          height: 50,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _durationOptions.length,
@@ -335,45 +310,34 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   Widget _buildDurationOption(int duration) {
     final isSelected = _selectedDuration == duration;
     return Padding(
-      padding: EdgeInsets.only(right: 12, left: duration == 1 ? 0 : 0),
+      padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: () => setState(() => _selectedDuration = duration),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          width: 60,
+          width: 56,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.blue[600] : Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected ? Colors.blue[50] : Colors.white,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? Colors.blue[600]! : Colors.grey[300]!,
-              width: 1.5,
+              width: isSelected ? 1.5 : 1,
             ),
-            boxShadow: [
-              if (isSelected)
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 duration.toString(),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: isSelected ? Colors.white : Colors.blueGrey[800],
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: isSelected ? Colors.blue[800] : Colors.blueGrey[800],
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 'min',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.8)
-                      : Colors.blueGrey[500],
+                  color: isSelected ? Colors.blue[600] : Colors.blueGrey[500],
                 ),
               ),
             ],
@@ -388,9 +352,9 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('VISUALIZATION'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         SizedBox(
-          height: 140,
+          height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _imageOptions.length,
@@ -407,29 +371,21 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   Widget _buildVisualizationOption(Map<String, String> image) {
     final isSelected = _selectedImage == image['path'];
     return Padding(
-      padding: EdgeInsets.only(right: 16, left: image == _imageOptions.first ? 0 : 0),
+      padding: const EdgeInsets.only(right: 12),
       child: GestureDetector(
         onTap: () => setState(() => _selectedImage = image['path']!),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          width: 120,
+          width: 100,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? Colors.blue[600]! : Colors.transparent,
               width: 2,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(10),
             child: Stack(
               children: [
                 Positioned.fill(
@@ -443,7 +399,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -459,7 +415,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -467,10 +423,10 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
                 ),
                 if (isSelected)
                   const Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 6,
+                    right: 6,
                     child: Icon(Icons.check_circle_rounded,
-                        color: Colors.white, size: 24),
+                        color: Colors.white, size: 20),
                   ),
               ],
             ),
@@ -485,10 +441,11 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('AMBIENT SOUND'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         SizedBox(
           height: 48,
           child: ListView.builder(
+            controller: _soundController,
             scrollDirection: Axis.horizontal,
             itemCount: _soundOptions.length,
             itemBuilder: (context, index) {
@@ -504,29 +461,38 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   Widget _buildSoundOption(Map<String, String> sound) {
     final isSelected = _selectedSound == sound['name'];
     return Padding(
-      padding: EdgeInsets.only(right: 8, left: sound == _soundOptions.first ? 0 : 0),
-      child: ChoiceChip(
-        label: Text(sound['name']!),
-        selected: isSelected,
-        onSelected: (selected) => setState(() => _selectedSound = sound['name']!),
-        avatar: Icon(
-          Icons.music_note_rounded,
-          size: 18,
-          color: isSelected ? Colors.white : Colors.blue[600],
-        ),
-        labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: isSelected ? Colors.white : Colors.blueGrey[800],
-        ),
-        backgroundColor: Colors.white,
-        selectedColor: Colors.blue[600],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: isSelected ? Colors.blue[600]! : Colors.grey[300]!,
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedSound = sound['name']!),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue[600] : Colors.grey[100],
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSelected ? Colors.blue[600]! : Colors.grey[300]!,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.music_note_rounded,
+                size: 16,
+                color: isSelected ? Colors.white : Colors.blue[600],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                sound['name']!,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: isSelected ? Colors.white : Colors.blueGrey[800],
+                ),
+              ),
+            ],
           ),
         ),
-        elevation: 0,
-        pressElevation: 0,
       ),
     );
   }
@@ -561,87 +527,96 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
           );
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[700],
+          backgroundColor: Colors.blue[600],
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
-          shadowColor: Colors.transparent,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.play_arrow_rounded, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'BEGIN SESSION',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+        child: Text(
+          'BEGIN SESSION',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildPracticeGuide() {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      title: Text(
-        'Practice Instructions',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: Colors.blueGrey[900],
-        ),
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      children: [
-        const SizedBox(height: 8),
-        _buildInstructionStep(1, 'Find a quiet space and sit comfortably'),
-        _buildInstructionStep(2, 'Place hands on chest and abdomen'),
-        _buildInstructionStep(3, 'Inhale deeply through nose (4 seconds)'),
-        _buildInstructionStep(4, 'Exhale slowly through mouth (6 seconds)'),
-        _buildInstructionStep(5, 'Focus on abdominal movement'),
-        _buildInstructionStep(6, 'Maintain relaxed, steady rhythm'),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Practice Instructions',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildInstructionStep(1, 'Find a quiet space and sit comfortably', theme),
+          _buildInstructionStep(2, 'Place hands on chest and abdomen', theme),
+          _buildInstructionStep(3, 'Inhale deeply through nose (4 seconds)', theme),
+          _buildInstructionStep(4, 'Exhale slowly through mouth (6 seconds)', theme),
+          _buildInstructionStep(5, 'Focus on abdominal movement', theme),
+          _buildInstructionStep(6, 'Maintain relaxed, steady rhythm', theme),
+        ],
+      ),
     );
   }
 
-  Widget _buildInstructionStep(int number, String text) {
+  Widget _buildInstructionStep(int number, String text, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: theme.colorScheme.primary,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 number.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.blueGrey[700],
-                height: 1.5,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                height: 1.6,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -653,7 +628,7 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
         color: Colors.blueGrey[600],
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
@@ -677,3 +652,4 @@ class _AbdominalBreathingPageState extends State<AbdominalBreathingPage> {
     return rounds < 1 ? 1 : rounds;
   }
 }
+
