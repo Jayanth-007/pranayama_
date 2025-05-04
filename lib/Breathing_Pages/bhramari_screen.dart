@@ -11,7 +11,7 @@ class BhramariScreen extends StatefulWidget {
     Key? key,
     required this.inhaleDuration,
     required this.exhaleDuration,
-    required this.rounds,
+    required this.rounds, required String imagePath,
   }) : super(key: key);
 
   @override

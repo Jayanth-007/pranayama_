@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:math';
 
 
+
 class BoxBreathingScreen extends StatefulWidget {
   final int inhaleDuration;  // seconds for Inhale phase
   final int hold1Duration;   // seconds for first Hold phase
@@ -109,6 +110,34 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
     "तुलसीदास सदा हरि चेरा, कीजै नाथ हृदय मंह डेरा",
   ];
 
+  final List<String> _adityaMantraVerses = [
+    "ॐ घृणिः सूर्याय नमः", // Om Ghrini Suryaya Namaha
+    "ॐ सूर्याय नमः", // Om Suryaya Namaha
+    "ॐ भानवे नमः", // Om Bhanave Namaha
+    "ॐ खगाय नमः", // Om Khagaya Namaha
+    "ॐ पूष्णे नमः", // Om Pushne Namaha
+    "ॐ हिरण्यगर्भाय नमः", // Om Hiranyagarbhaya Namaha
+    "ॐ मरीच्ये नमः", // Om Marichaye Namaha
+    "ॐ आदित्याय नमः", // Om Adityaya Namaha
+    "ॐ सवित्रे नमः", // Om Savitre Namaha
+    "ॐ अर्काय नमः", // Om Arkaya Namaha
+    "ॐ भास्कराय नमः", // Om Bhaskaraya Namaha
+    "ॐ श्रीसूर्यनारायणाय नमः", // Om Sri Surya Narayanaya Namaha
+    "असतो मा सद्गमय", // Asato Ma Sadgamaya (Lead me from unreal to real)
+    "तमसो मा ज्योतिर्गमय", // Tamaso Ma Jyotirgamaya (Lead me from darkness to light)
+    "मृत्योर्मा अमृतं गमय", // Mrtyorma Amrtam Gamaya (Lead me from death to immortality)
+    "ॐ शान्तिः शान्तिः शान्तिः", // Om Peace Peace Peace
+    "जयति जयति सूर्य देव", // Jayati Jayati Surya Deva
+    "प्रभावय प्रभावय जगत पती", // Prabhavaya Prabhavaya Jagat Pati
+    "तेजस्वी नावधीतमस्तु", // Tejasvi Navadhitamastu
+    "सूर्य ब्रह्म नमस्तुभ्यम्", // Surya Brahma Namastubhyam
+    "मां रक्ष सर्वदा विभो", // Mam Raksha Sarvada Vibho
+    "यः सूर्यः सोऽहमस्मि", // Yah Suryah So'ham Asmi
+    "सन्मार्गं दर्शय प्रभो", // Sanmargam Darshaya Prabho
+    "दिव्यज्योतिः प्रबोधय", // Divya Jyotih Prabodhaya
+  ];
+
+  bool showAdityaMantra = false;
   @override
   void initState() {
     super.initState();
@@ -208,15 +237,20 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
       _resetSideReadStatus();
 
       // Move to next group of 4 verses
-      if (showHanumanChalisa) {
+      if (showHanumanChalisa || showAdityaMantra) {
         setState(() {
-          _currentVerseIndex = (_currentVerseIndex + 4) % _hanumanChalisaVerses.length;
+          List<String> currentVerses = showAdityaMantra
+              ? _adityaMantraVerses
+              : _hanumanChalisaVerses;
+
+          _currentVerseIndex = (_currentVerseIndex + 4) % currentVerses.length;
           // Make sure we don't go past the end of the list
-          if (_currentVerseIndex + 3 >= _hanumanChalisaVerses.length) {
+          if (_currentVerseIndex + 3 >= currentVerses.length) {
             _currentVerseIndex = 0;
           }
         });
       }
+
 
       _currentRound++;
       if (_currentRound < widget.rounds) {
@@ -313,7 +347,29 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
 
   void toggleHanumanChalisa() {
     setState(() {
-      showHanumanChalisa = !showHanumanChalisa;
+      if (showHanumanChalisa) {
+        // If Hanuman Chalisa is showing, turn it off
+        showHanumanChalisa = false;
+      } else {
+        // Turn on Hanuman Chalisa and ensure Aditya Mantra is off
+        showHanumanChalisa = true;
+        showAdityaMantra = false;
+      }
+      _currentVerseIndex = 0;
+      _resetSideReadStatus();
+    });
+  }
+
+  void toggleAdityaMantra() {
+    setState(() {
+      if (showAdityaMantra) {
+        // If Aditya Mantra is showing, turn it off
+        showAdityaMantra = false;
+      } else {
+        // Turn on Aditya Mantra and ensure Hanuman Chalisa is off
+        showAdityaMantra = true;
+        showHanumanChalisa = false;
+      }
       _currentVerseIndex = 0;
       _resetSideReadStatus();
     });
@@ -330,13 +386,21 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
 
   /// Gets the index for the verse based on the side
   int _getVerseIndexForSide(String side) {
+    int index;
     switch (side) {
-      case "top": return _currentVerseIndex;
-      case "right": return _currentVerseIndex + 1;
-      case "bottom": return _currentVerseIndex + 2;
-      case "left": return _currentVerseIndex + 3;
-      default: return _currentVerseIndex;
+      case "top": index = _currentVerseIndex; break;
+      case "right": index = _currentVerseIndex + 1; break;
+      case "bottom": index = _currentVerseIndex + 2; break;
+      case "left": index = _currentVerseIndex + 3; break;
+      default: index = _currentVerseIndex;
     }
+
+    List<String> currentVerses = showAdityaMantra
+        ? _adityaMantraVerses
+        : _hanumanChalisaVerses;
+
+    // Make sure we don't go out of bounds
+    return index % currentVerses.length;
   }
 
   /// Computes the center of the moving ball along the square's perimeter.
@@ -371,8 +435,13 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
   /// Create a text widget for a verse with proper styling and rotation
   Widget _buildVerseWidget(String side, bool isActive) {
     int verseIndex = _getVerseIndexForSide(side);
-    verseIndex = verseIndex % _hanumanChalisaVerses.length;
-    String verse = _hanumanChalisaVerses[verseIndex];
+
+    // Get the appropriate verse list
+    List<String> currentVerses = showAdityaMantra
+        ? _adityaMantraVerses
+        : _hanumanChalisaVerses;
+
+    String verse = currentVerses[verseIndex];
     bool isRead = _sideRead[side]!;
 
     // Define colors for different states
@@ -440,6 +509,8 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
   }
 
   /// Builds the box with the moving ball and side-specific karaoke verses
+  /// Builds the box with the moving ball and side-specific karaoke verses
+  /// Builds the box with the moving ball and side-specific karaoke verses
   Widget _buildBoxAnimation() {
     const double boxSize = 300;
     const double ballDiameter = 24;
@@ -490,8 +561,8 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
             ),
           ),
 
-          // Only show verses if Hanuman Chalisa is enabled
-          if (showHanumanChalisa) ...[
+          // Only show verses if Hanuman Chalisa OR Aditya Mantra is enabled
+          if (showHanumanChalisa || showAdityaMantra) ...[
             // Top verse - enough space from the box
             Positioned(
               top: 0,
@@ -719,6 +790,34 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
     );
   }
 
+  Widget _buildAdityaMantraToggle() {
+    return ElevatedButton.icon(
+      onPressed: toggleAdityaMantra,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: showAdityaMantra ? Color(0xFFFF5722) : Color(0xFF607D8B),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+        elevation: 8,
+        shadowColor: (showAdityaMantra ? Color(0xFFFF5722) : Color(0xFF607D8B)).withOpacity(0.5),
+      ),
+      icon: Icon(
+        Icons.wb_sunny,
+        size: 20,
+      ),
+      label: Text(
+        "Aditya Mantra",
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   /// Builds the breathing phase display
   Widget _buildBreathingPhaseText() {
     Color textColor;
@@ -739,30 +838,30 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
     }
 
     return TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0.8, end: 1.0),
-    duration: Duration(milliseconds: 300),
-    curve: Curves.easeInOut,
-    builder: (context, value, child) {
-    return Transform.scale(
-    scale: value,
-    child: Text(
-    breathingText,
-    style: TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.bold,
-    color: textColor,
-      letterSpacing: 1.0,
-      shadows: [
-        Shadow(
-          color: Colors.black38,
-          blurRadius: 5,
-          offset: Offset(1, 1),
-        ),
-      ],
-    ),
-    ),
-    );
-    },
+      tween: Tween<double>(begin: 0.8, end: 1.0),
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Text(
+            breathingText,
+            style: TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+              letterSpacing: 1.0,
+              shadows: [
+                Shadow(
+                  color: Colors.black38,
+                  blurRadius: 5,
+                  offset: Offset(1, 1),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -806,16 +905,25 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
 
   /// Builds the verses progress indicator
   Widget _buildVersesProgressIndicator() {
+    // Only show if either text is active
+    bool showIndicator = showHanumanChalisa || showAdityaMantra;
+
+    // Choose the right icon, color, and text based on which text is active
+    IconData indicatorIcon = showAdityaMantra ? Icons.wb_sunny : Icons.auto_stories;
+    Color indicatorColor = showAdityaMantra ? Color(0xFFFF5722) : Color(0xFFFF9800);
+    List<String> currentVerses = showAdityaMantra ? _adityaMantraVerses : _hanumanChalisaVerses;
+    String textType = showAdityaMantra ? "Mantras" : "Verses";
+
     return AnimatedOpacity(
-      opacity: showHanumanChalisa ? 1.0 : 0.0,
+      opacity: showIndicator ? 1.0 : 0.0,
       duration: Duration(milliseconds: 300),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: Color(0xFFFF9800).withOpacity(0.15),
+          color: indicatorColor.withOpacity(0.15),
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: Color(0xFFFF9800).withOpacity(0.5),
+            color: indicatorColor.withOpacity(0.5),
             width: 1,
           ),
         ),
@@ -823,15 +931,15 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.auto_stories,
-              color: Color(0xFFFF9800),
+              indicatorIcon,
+              color: indicatorColor,
               size: 18,
             ),
             SizedBox(width: 8),
             Text(
-              "Verses ${_currentVerseIndex + 1}-${_currentVerseIndex + 4} of ${_hanumanChalisaVerses.length}",
+              "$textType ${_currentVerseIndex + 1}-${min(_currentVerseIndex + 4, currentVerses.length)} of ${currentVerses.length}",
               style: TextStyle(
-                color: Color(0xFFFF9800),
+                color: indicatorColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.5,
@@ -921,7 +1029,15 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                       children: [
                         _buildControlButtons(),
                         SizedBox(width: 16),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         _buildHanumanChalisaToggle(),
+                        SizedBox(width: 16),
+                        _buildAdityaMantraToggle(),
                       ],
                     ),
                   ],

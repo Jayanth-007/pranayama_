@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:meditation_app/courses/sheetali_pranayama_page.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-
-// Import your breathing exercise screen.
 import '../Breathing_Pages/bilateral_screen.dart';
-// Import the modified TimerPickerWidget.
-import '../common_widgets/timer_widget.dart';
-// Import the common customization popup from customize.dart.
 import '../Customization/customize.dart';
-
-enum DurationMode { rounds, minutes }
 
 class SheetaliPranayamaPage extends StatefulWidget {
   @override
@@ -17,66 +10,246 @@ class SheetaliPranayamaPage extends StatefulWidget {
 }
 
 class _SheetaliPranayamaPageState extends State<SheetaliPranayamaPage> {
-  String? _selectedTechnique;
-  final List<String> _breathingTechniques = [
-    '4:4 Sheetali Pranayama (Standard)',
-    'Customize Technique',
-  ];
+  static const Color _brandColor = Color(0xff98bad5);
 
-  // Hardcoded YouTube video URL for Sheetali demonstration.
+  String _selectedTechnique = '4:4';
+  final Map<String, String> _techniques = {
+    '4:4': '4:4 Sheetali Pranayama (Recommended)',
+    'custom': 'Customize Technique',
+  };
+
   final String _videoUrl = "https://www.youtube.com/watch?v=YOUR_SHEETALI_VIDEO_ID";
-  late YoutubePlayerController _youtubePlayerController;
+  late YoutubePlayerController _ytController;
 
-  DurationMode _durationMode = DurationMode.rounds;
-  double _pickerValue = 5.0;
+  bool _isMinutesMode = false;
+  int _selectedDuration = 5;
+
   int? _customInhale;
   int? _customExhale;
-  final int _customHold = 0;
 
   @override
   void initState() {
     super.initState();
-    _youtubePlayerController = YoutubePlayerController(
+    _ytController = YoutubePlayerController(
       initialVideoId: YoutubePlayer.convertUrlToId(_videoUrl)!,
       flags: YoutubePlayerFlags(autoPlay: false, mute: false),
     );
-    _selectedTechnique = _breathingTechniques.isNotEmpty ? _breathingTechniques[0] : null;
   }
 
-  int _getRoundSeconds() {
-    if (_selectedTechnique == "Customize Technique") {
-      if (_customInhale != null && _customExhale != null) {
-        return _customInhale! + _customExhale!;
-      }
-      return 0;
-    } else if (_selectedTechnique != null && _selectedTechnique!.contains(":")) {
-      try {
-        final ratioPart = _selectedTechnique!.split(" ")[0];
-        final parts = ratioPart.split(":");
-        final inhale = int.tryParse(parts[0]) ?? 0;
-        final exhale = int.tryParse(parts[1]) ?? 0;
-        return inhale + exhale;
-      } catch (e) {
-        return 0;
-      }
+  @override
+  void dispose() {
+    _ytController.dispose();
+    super.dispose();
+  }
+
+  int get _roundSeconds {
+    if (_selectedTechnique == 'custom' && _customInhale != null && _customExhale != null) {
+      return _customInhale! + _customExhale!;
     }
-    return 0;
+    // default 4:4
+    return 4 + 4;
   }
 
-  int _calculateTotalMinutesFromRounds() {
-    int secondsPerRound = _getRoundSeconds();
-    int totalSeconds = (secondsPerRound * _pickerValue).toInt();
-    return (totalSeconds / 60).round();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Sheetali Pranayama"),
+        centerTitle: true,
+        elevation: 0,
+        toolbarHeight: 60,
+        backgroundColor: _brandColor,
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSectionTitle("Breathing Technique"),
+            SizedBox(height: 8),
+            _buildTechniqueButtons(),
+            SizedBox(height: 24),
+
+            _buildSectionTitle("Duration"),
+            SizedBox(height: 8),
+            _buildDurationControls(),
+            SizedBox(height: 24),
+
+            _buildCustomizeButton(),
+            SizedBox(height: 16),
+
+            _buildBeginButton(),
+            SizedBox(height: 32),
+
+            _buildSectionTitle("About Sheetali Pranayama"),
+            _buildDescriptionText(),
+            SizedBox(height: 24),
+
+            _buildSectionTitle("Video Demonstration"),
+            SizedBox(height: 12),
+            _buildVideoPlayer(),
+            SizedBox(height: 24),
+
+            _buildSectionTitle("How To Practice"),
+            SizedBox(height: 12),
+            ..._buildInstructionSteps(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildLearnMoreButton(),
+    );
   }
 
-  int _calculateRoundsFromMinutes() {
-    int secondsPerRound = _getRoundSeconds();
-    if (secondsPerRound == 0) return 0;
-    int totalSeconds = (_pickerValue * 60).toInt();
-    return totalSeconds ~/ secondsPerRound;
+  Widget _buildSectionTitle(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
   }
 
-  void _showCustomDialog() async {
+  Widget _buildTechniqueButtons() {
+    return Row(
+      children: _techniques.entries.map((entry) {
+        final isSelected = _selectedTechnique == entry.key;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected ? _brandColor : Colors.grey[200],
+                foregroundColor: isSelected ? Colors.white : Colors.black87,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
+              ),
+              onPressed: () {
+                setState(() => _selectedTechnique = entry.key);
+                if (entry.key == 'custom') _showCustomDialog();
+              },
+              child: Column(
+                children: [
+                  Text(
+                    entry.key,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  if (entry.key == '4:4') SizedBox(height: 4),
+                  if (entry.key == '4:4')
+                    Text(
+                      'Recommended',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected ? Colors.white : Colors.green,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDurationControls() {
+    final options = _isMinutesMode
+        ? [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+        : [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75];
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildToggleOption("Rounds", !_isMinutesMode),
+            SizedBox(width: 20),
+            _buildToggleOption("Minutes", _isMinutesMode),
+          ],
+        ),
+        SizedBox(height: 16),
+        Container(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: options.length,
+            itemBuilder: (_, i) {
+              final val = options[i];
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDuration = val),
+                child: Container(
+                  width: 80,
+                  margin: EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: _selectedDuration == val ? _brandColor : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "$val",
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: _selectedDuration == val ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 8),
+        _buildDurationHint(),
+      ],
+    );
+  }
+
+  Widget _buildToggleOption(String text, bool isActive) {
+    return GestureDetector(
+      onTap: () => setState(() => _isMinutesMode = text == "Minutes"),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isActive ? _brandColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border(
+            bottom: BorderSide(
+              color: isActive ? _brandColor : Colors.grey.shade400,
+              width: 2.0,
+            ),
+          ),
+        ),
+        child: Text(text, style: TextStyle(color: isActive ? Colors.white : Colors.black87)),
+      ),
+    );
+  }
+
+  Widget _buildDurationHint() {
+    final totalSeconds = _isMinutesMode
+        ? _selectedDuration * 60
+        : _selectedDuration * _roundSeconds;
+    final hint = _isMinutesMode
+        ? "≈ ${(totalSeconds / _roundSeconds).toStringAsFixed(0)} rounds"
+        : "≈ ${(totalSeconds / 60).toStringAsFixed(1)} minutes";
+    return Text(hint, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600]));
+  }
+
+  Widget _buildCustomizeButton() {
+    return OutlinedButton.icon(
+      icon: Icon(Icons.settings, size: 20, color: Colors.black),
+      label: Text("Customize Breathing Pattern"),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.black,
+        padding: EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide(color: _brandColor),
+      ),
+      onPressed: _showCustomDialog,
+    );
+  }
+
+  Future<void> _showCustomDialog() async {
     final result = await showCustomizationDialog(
       context,
       initialInhale: _customInhale ?? 4,
@@ -91,216 +264,105 @@ class _SheetaliPranayamaPageState extends State<SheetaliPranayamaPage> {
     }
   }
 
-  void _navigateToTechnique() {
-    if (_selectedTechnique == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a technique')));
-      return;
-    }
-    int rounds = _durationMode == DurationMode.rounds ? _pickerValue.toInt() : _calculateRoundsFromMinutes();
-    switch (_selectedTechnique) {
-      case '4:4 Sheetali Pranayama (Standard)':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BilateralScreen(
-              inhaleDuration: 4,
-              exhaleDuration: 4,
-              rounds: rounds,
-            ),
-          ),
-        );
-        break;
-      case 'Customize Technique':
-        if (_customInhale == null || _customExhale == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please set custom breathing values')));
-          return;
-        }
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BilateralScreen(
-              inhaleDuration: _customInhale!,
-              exhaleDuration: _customExhale!,
-              rounds: rounds,
-            ),
-          ),
-        );
-        break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Technique not available')));
-    }
-  }
-
-  Widget _buildDurationModeToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Radio<DurationMode>(
-          value: DurationMode.rounds,
-          groupValue: _durationMode,
-          onChanged: (value) {
-            setState(() {
-              _durationMode = value!;
-              _pickerValue = 5.0;
-            });
-          },
+  Widget _buildBeginButton() {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: () {
+          final inhale = _selectedTechnique == '4:4' ? 4 : (_customInhale ?? 4);
+          final exhale = _selectedTechnique == '4:4' ? 4 : (_customExhale ?? 4);
+          final rounds = _isMinutesMode
+              ? (_selectedDuration * 60) ~/ (inhale + exhale)
+              : _selectedDuration;
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (_) => BilateralScreen(
+          //       inhaleDuration: inhale,
+          //       exhaleDuration: exhale,
+          //       rounds: rounds,
+          //     ),
+          //   ),
+          // );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _brandColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        Text("Rounds"),
-        Radio<DurationMode>(
-          value: DurationMode.minutes,
-          groupValue: _durationMode,
-          onChanged: (value) {
-            setState(() {
-              _durationMode = value!;
-              _pickerValue = 5.0;
-            });
-          },
+        child: Text(
+          "BEGIN EXERCISE",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        Text("Minutes"),
-      ],
+      ),
     );
   }
 
-  Widget _buildPicker() {
-    final List<int> options = _durationMode == DurationMode.rounds
-        ? List<int>.generate(20, (index) => (index + 1) * 5)
-        : List<int>.generate(12, (index) => (index + 1) * 5);
-    final String titleLabel = _durationMode == DurationMode.rounds ? "Select Rounds" : "Select Duration";
-    final String bottomLabel = _durationMode == DurationMode.rounds ? "rounds" : "minutes";
-
-    return TimerPickerWidget(
-      durations: options,
-      initialDuration: _pickerValue.toInt(),
-      titleLabel: titleLabel,
-      bottomLabel: bottomLabel,
-      onDurationSelected: (selectedValue) {
-        setState(() {
-          _pickerValue = selectedValue.toDouble();
-        });
-      },
+  Widget _buildDescriptionText() {
+    return Text(
+      "Sheetali Pranayama is a cooling breath where you roll or curl your tongue into a tube (if possible), "
+          "inhale through the mouth, then exhale through the nose. It soothes the mind and cools the body.",
+      style: TextStyle(fontSize: 15, height: 1.5),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    int roundSeconds = _getRoundSeconds();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Sheetali Pranayama"),
-        centerTitle: true,
+  List<Widget> _buildInstructionSteps() {
+    final steps = [
+      "Sit comfortably with spine straight and shoulders relaxed.",
+      "Roll your tongue into a tube (if possible).",
+      "Inhale slowly through the tongue tube, feeling cool air.",
+      "Close your mouth and exhale gently through the nose.",
+      "Repeat for your selected duration, focusing on the cooling effect.",
+    ];
+    return List.generate(steps.length, (i) => _buildStepCard(i + 1, steps[i]));
+  }
+
+  Widget _buildStepCard(int num, String text) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!, width: 1),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text("Select a Breathing Technique", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8.0),
-            DropdownButton<String>(
-              value: _selectedTechnique,
-              hint: Text("Select a technique"),
-              isExpanded: true,
-              items: _breathingTechniques.map((technique) => DropdownMenuItem<String>(
-                value: technique,
-                child: Text(technique),
-              )).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedTechnique = value;
-                  _pickerValue = 5.0;
-                });
-                if (value == "Customize Technique") _showCustomDialog();
-              },
-            ),
-            SizedBox(height: 16.0),
-            if (roundSeconds > 0) ...[
-              _buildDurationModeToggle(),
-              SizedBox(height: 8.0),
-              _buildPicker(),
-              SizedBox(height: 8.0),
-              _durationMode == DurationMode.rounds
-                  ? Text("Total Time: ${_calculateTotalMinutesFromRounds()} minute(s)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal), textAlign: TextAlign.center)
-                  : Text("Maximum Rounds Possible: ${_calculateRoundsFromMinutes()}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal), textAlign: TextAlign.center),
-              SizedBox(height: 16.0),
-            ],
-            Text("What is Sheetali Pranayama?", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4.0),
-            Text(
-              "Sheetali Pranayama is a cooling breathing technique in which you curl or roll your tongue (if possible) to create a tube, inhale through the mouth, and then exhale through the nose. This practice helps to cool the body and soothe the mind.",
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 24.0),
-            Text("Watch a Demonstration", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8.0),
-            YoutubePlayer(
-              controller: _youtubePlayerController,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: Colors.teal,
-            ),
-            SizedBox(height: 24.0),
-            Text("Step-by-Step Instructions", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16.0),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.teal, child: Text("1", style: TextStyle(color: Colors.white))),
-                title: Text("Sit comfortably with your spine straight and shoulders relaxed."),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.teal, child: Text("2", style: TextStyle(color: Colors.white))),
-                title: Text("Roll your tongue into a tube (if possible) or shape it as best as you can."),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.teal, child: Text("3", style: TextStyle(color: Colors.white))),
-                title: Text("Inhale slowly through your mouth, feeling a cooling sensation as the air passes over your tongue."),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.teal, child: Text("4", style: TextStyle(color: Colors.white))),
-                title: Text("Close your mouth and exhale slowly through your nose."),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              elevation: 3.0,
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.teal, child: Text("5", style: TextStyle(color: Colors.white))),
-                title: Text("Repeat this pattern for several rounds, focusing on the cooling effect with each breath."),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: EdgeInsets.all(16),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            ElevatedButton(
-              onPressed: _navigateToTechnique,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              child: Text("Begin"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Replace with your actual Learn More page for Sheetali.
-                Navigator.push(context, MaterialPageRoute(builder: (context) => SheetaliPranayamaLearnMorePage()));
-              },
-              child: Text("Learn More"),
-            ),
+            CircleAvatar(radius: 14, backgroundColor: _brandColor, child: Text("$num", style: TextStyle(color: Colors.white, fontSize: 12))),
+            SizedBox(width: 12),
+            Expanded(child: Text(text, style: TextStyle(height: 1.4))),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: YoutubePlayer(
+        controller: _ytController,
+        aspectRatio: 16 / 9,
+        showVideoProgressIndicator: true,
+      ),
+    );
+  }
+
+  Widget _buildLearnMoreButton() {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SheetaliPranayamaLearnMorePage()),
+            );
+          },
+          child: Text(
+            "Learn More →",
+            style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w800),
+          ),
         ),
       ),
     );

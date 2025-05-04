@@ -67,16 +67,16 @@ class _NadiShodhanaPageState extends State<NadiShodhanaPage> {
       rounds = _calculateRoundsFromMinutes();
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BilateralScreen(
-          inhaleDuration: 4,
-          exhaleDuration: 6,
-          rounds: rounds,
-        ),
-      ),
-    );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => BilateralScreen(
+    //       inhaleDuration: 4,
+    //       exhaleDuration: 6,
+    //       rounds: rounds,
+    //     ),
+    //   ),
+    // );
   }
 
   Widget _buildInstructionCard(int step, String content) {

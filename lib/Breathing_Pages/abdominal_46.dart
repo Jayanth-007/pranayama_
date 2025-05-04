@@ -24,7 +24,20 @@ class AbdominalApp extends StatelessWidget {
 }
 
 class AbdominalScreen extends StatefulWidget {
-  const AbdominalScreen({Key? key}) : super(key: key);
+  final int inhaleDuration;
+  final int exhaleDuration;
+  final int rounds;
+  final String imagePath;
+  final String audioPath;
+
+  const AbdominalScreen({
+    Key? key,
+    this.inhaleDuration = 4,
+    this.exhaleDuration = 6,
+    this.rounds = 5,
+    this.imagePath = 'assets/images/option3.png',
+    this.audioPath = '',
+  }) : super(key: key);
 
   @override
   _AbdominalScreenState createState() => _AbdominalScreenState();
@@ -35,59 +48,147 @@ class _AbdominalScreenState extends State<AbdominalScreen>
   late AnimationController _controller;
   late Animation<double> sizeTween;
   late AudioPlayer _audioPlayer;
+  late AudioPlayer _bellPlayer;
 
   bool isRunning = false;
   bool isAudioPlaying = false;
+  int completedRounds = 0;
+  int totalRounds = 0;
+  bool lastPhaseWasInhale = false;
 
   String breathingText = "Inhale";
-  int inhaleDuration = 4; // In seconds
-  int exhaleDuration = 6; // In seconds
 
   @override
   void initState() {
     super.initState();
+    totalRounds = widget.rounds;
 
     // Animation setup
     _controller = AnimationController(
-      duration: Duration(seconds: inhaleDuration + exhaleDuration),
+      duration: Duration(seconds: widget.inhaleDuration + widget.exhaleDuration),
       vsync: this,
     );
 
     sizeTween = Tween<double>(begin: 1.0, end: 1.5).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 1.0, curve: Curves.easeInOut), // Smooth transition
+        curve: const Interval(0.0, 1.0, curve: Curves.easeInOut),
       ),
     );
 
     _controller.addListener(() {
-      setState(() {
-        if (_controller.value <= inhaleDuration / (inhaleDuration + exhaleDuration)) {
+      double inhaleThreshold = widget.inhaleDuration / (widget.inhaleDuration + widget.exhaleDuration);
+
+      if (_controller.value <= inhaleThreshold && (!lastPhaseWasInhale || _controller.value < 0.01)) {
+        setState(() {
           breathingText = "Inhale";
-        } else {
+          lastPhaseWasInhale = true;
+        });
+        _playBellSound();
+      } else if (_controller.value > inhaleThreshold && lastPhaseWasInhale) {
+        setState(() {
           breathingText = "Exhale";
-        }
-      });
+          lastPhaseWasInhale = false;
+        });
+        _playBellSound();
+      }
     });
 
     _controller.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
-        _controller.reset();
+        completedRounds++;
 
-        // 5-millisecond pause after inhale before starting exhale
-        if (breathingText == "Inhale") {
-          await Future.delayed(const Duration(milliseconds: 5));
+        if (completedRounds >= totalRounds && totalRounds > 0) {
+          _controller.stop();
+          setState(() {
+            isRunning = false;
+            breathingText = "Complete";
+          });
+          return;
         }
 
-        _startBreathingCycle();
+        _controller.reset();
+        setState(() {
+          lastPhaseWasInhale = false;
+        });
+
+        await Future.delayed(const Duration(milliseconds: 5));
+
+        if (isRunning) {
+          _startBreathingCycle();
+        }
       }
     });
 
     _audioPlayer = AudioPlayer();
+    _bellPlayer = AudioPlayer();
+
+    // ✅ Set AudioContext to allow simultaneous playback
+    final audioContext = AudioContext(
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {AVAudioSessionOptions.mixWithOthers},
+      ),
+      android: AudioContextAndroid(
+        isSpeakerphoneOn: true,
+        stayAwake: false,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.media,
+        audioFocus: AndroidAudioFocus.none,
+      ),
+    );
+
+    _audioPlayer.setAudioContext(audioContext);
+    _bellPlayer.setAudioContext(audioContext);
+
+    // Setup players
+    if (widget.audioPath.isNotEmpty) {
+      _setupAudioPlayer();
+    }
+
+    _setupBellPlayer();
+  }
+
+
+
+  Future<void> _setupAudioPlayer() async {
+    try {
+      await _audioPlayer.setSourceAsset(widget.audioPath);
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+    } catch (e) {
+      print('Error setting up audio player: $e');
+    }
+  }
+
+  Future<void> _setupBellPlayer() async {
+    try {
+      await _bellPlayer.setReleaseMode(ReleaseMode.release);
+    } catch (e) {
+      print('Error setting up bell player: $e');
+    }
+  }
+
+  Future<void> _playBellSound() async {
+    try {
+      // Stop any current playing to avoid overlap
+      await _bellPlayer.stop();
+      // Play different bell sounds for inhale and exhale
+      if (breathingText == "Inhale") {
+        await _bellPlayer.play(AssetSource('music/inhale_bell1.mp3'));
+      } else {
+        await _bellPlayer.play(AssetSource('music/exhale_bell1.mp3'));
+      }
+    } catch (e) {
+      print('Error playing bell sound: $e');
+    }
   }
 
   void _startBreathingCycle() {
     _controller.forward();
+    // Play initial bell sound when starting
+    if (_controller.value < 0.01) {
+      _playBellSound();
+    }
   }
 
   void toggleBreathing() {
@@ -99,19 +200,38 @@ class _AbdominalScreenState extends State<AbdominalScreen>
     } else {
       setState(() {
         isRunning = true;
+        // Reset if completed
+        if (breathingText == "Complete") {
+          completedRounds = 0;
+          breathingText = "Inhale";
+          lastPhaseWasInhale = false;
+        }
       });
       _startBreathingCycle();
     }
   }
 
   Future<void> toggleAudio() async {
+    if (widget.audioPath.isEmpty) {
+      // No audio file selected
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No ambient sound selected')),
+      );
+      return;
+    }
+
     if (isAudioPlaying) {
       await _audioPlayer.pause();
     } else {
       try {
-        await _audioPlayer.play(AssetSource('music/relaxing_audio.mp3'));
+        await _audioPlayer.resume();
       } catch (e) {
-        print('Error playing audio: $e');
+        // Try to play if resume fails
+        try {
+          await _audioPlayer.play(AssetSource(widget.audioPath));
+        } catch (e) {
+          print('Error playing audio: $e');
+        }
       }
     }
     setState(() {
@@ -123,20 +243,36 @@ class _AbdominalScreenState extends State<AbdominalScreen>
   void dispose() {
     _controller.dispose();
     _audioPlayer.dispose();
+    _bellPlayer.dispose();
     super.dispose();
+  }
+
+  String _getBreathingRatio() {
+    return "${widget.inhaleDuration}:${widget.exhaleDuration}";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Abdominal Breathing (4:6)",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+        title: Text(
+          "Abdominal Breathing (${_getBreathingRatio()})",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
         backgroundColor: Colors.blueGrey,
         elevation: 10,
+        actions: [
+          if (widget.audioPath.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                isAudioPlaying ? Icons.music_note : Icons.music_off,
+                color: Colors.white,
+                size: 28.0,
+              ),
+              onPressed: toggleAudio,
+            ),
+        ],
       ),
       body: Stack(
         children: [
@@ -155,22 +291,12 @@ class _AbdominalScreenState extends State<AbdominalScreen>
                   _buildTextDisplay(breathingText),
                   const SizedBox(height: 20),
                   _buildBreathingImage(),
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 20),
+                  _buildProgressIndicator(),
+                  const SizedBox(height: 30),
                   _buildControlButtons(),
                 ],
               ),
-            ),
-          ),
-          Positioned(
-            top: kToolbarHeight + 10,
-            right: 15,
-            child: IconButton(
-              icon: Icon(
-                isAudioPlaying ? Icons.music_note : Icons.music_off,
-                color: Colors.teal,
-                size: 36.0,
-              ),
-              onPressed: toggleAudio,
             ),
           ),
         ],
@@ -215,11 +341,11 @@ class _AbdominalScreenState extends State<AbdominalScreen>
         builder: (context, child) {
           double progress = _controller.value;
           double scale;
-          if (progress <= inhaleDuration / (inhaleDuration + exhaleDuration)) {
-            scale = 1.0 + 0.5 * (progress / (inhaleDuration / (inhaleDuration + exhaleDuration)));
+          if (progress <= widget.inhaleDuration / (widget.inhaleDuration + widget.exhaleDuration)) {
+            scale = 1.0 + 0.5 * (progress / (widget.inhaleDuration / (widget.inhaleDuration + widget.exhaleDuration)));
           } else {
-            scale = 1.5 - 0.5 * ((progress - inhaleDuration / (inhaleDuration + exhaleDuration)) /
-                (exhaleDuration / (inhaleDuration + exhaleDuration)));
+            scale = 1.5 - 0.5 * ((progress - widget.inhaleDuration / (widget.inhaleDuration + widget.exhaleDuration)) /
+                (widget.exhaleDuration / (widget.inhaleDuration + widget.exhaleDuration)));
           }
 
           return Transform.scale(
@@ -232,8 +358,8 @@ class _AbdominalScreenState extends State<AbdominalScreen>
           width: 250,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            image: const DecorationImage(
-              image: AssetImage('assets/images/muladhara_chakra3.png'),
+            image: DecorationImage(
+              image: AssetImage(widget.imagePath),
               fit: BoxFit.cover,
             ),
             boxShadow: [
@@ -249,18 +375,46 @@ class _AbdominalScreenState extends State<AbdominalScreen>
     );
   }
 
+  Widget _buildProgressIndicator() {
+    return Column(
+      children: [
+        Text(
+          "Round ${completedRounds + (isRunning ? 1 : 0)} of $totalRounds",
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: 250,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: totalRounds > 0 ? (completedRounds / totalRounds) : 0,
+              backgroundColor: Colors.grey.withOpacity(0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+              minHeight: 10,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildControlButtons() {
     return ElevatedButton.icon(
       onPressed: toggleBreathing,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.teal,
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 10,
       ),
       icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
       label: Text(
-        isRunning ? "Pause" : "Start",
+        isRunning ? "Pause" : (completedRounds >= totalRounds && totalRounds > 0) ? "Restart" : "Start",
         style: const TextStyle(fontSize: 20),
       ),
     );

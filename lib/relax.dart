@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:meditation_app/Breathing_Pages/abdominal_46.dart';
 import 'package:meditation_app/Instruction/instruction_abdo.dart';
 import 'package:meditation_app/Instruction/instruction_bhramari.dart';
 import 'package:meditation_app/Instruction/instruction_chandra.dart';
@@ -37,6 +38,8 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   File? _profileImage;
   String? _profileImageUrl;
 
+  late List<Widget> _screens;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +54,13 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     _controller.forward();
+    _screens = [
+      const MeditationScreen(),
+      CoursesPage(),
+      ProgressScreen(),
+      MeditationProfile(),
+
+    ];
     _loadUserData();
   }
 
@@ -60,24 +70,24 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  final List<Widget> _screens = [
-    const MeditationScreen(),
-    CoursesPage(),
-    ProgressScreen(),
-    MeditationProfile(),
-  ];
-
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
+
     if (user != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPath = prefs.getString('profileImage_${user.uid}');
+      if (savedPath != null && File(savedPath).existsSync()) {
+        _profileImage = File(savedPath);
+      }
+
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
       if (doc.exists && doc.data() != null) {
+        _userName = doc.get('name') ?? 'User';
+        _profileImageUrl = user.photoURL;
         setState(() {
-          _userName = doc.get('name') ?? 'User';
-          _profileImageUrl = user.photoURL;
           _screens[0] = MeditationScreen(
             userName: _userName,
             profileImage: _profileImage,
@@ -90,9 +100,15 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
+    final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profileImage_${user.uid}', image.path);
+      }
+
       setState(() {
         _profileImage = File(image.path);
         _screens[0] = MeditationScreen(
@@ -131,6 +147,7 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -143,59 +160,36 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
           },
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          child: BottomAppBar(
-            color: Colors.white,
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 8.0,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.spa,
-                        color: _currentIndex == 0 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(0),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.school,
-                        color: _currentIndex == 1 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(1),
-                  ),
-                  const SizedBox(width: 48),
-                  IconButton(
-                    icon: Icon(Icons.bar_chart,
-                        color: _currentIndex == 2 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(2),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.person,
-                        color: _currentIndex == 3 ? Colors.teal : Colors.grey.shade400,
-                        size: 28),
-                    onPressed: () => _onItemTapped(3),
-                  ),
-                ],
-              ),
-            ),
+      bottomNavigationBar: NavigationBar(
+        height: 70,
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _onItemTapped,
+        backgroundColor: Colors.white,
+        indicatorColor: Colors.teal.shade100.withOpacity(0.3),
+        elevation: 10,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.spa_outlined),
+            selectedIcon: Icon(Icons.spa),
+            label: 'Relax',
           ),
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school),
+            label: 'Courses',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Progress',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handlePanicButton,
@@ -205,7 +199,7 @@ class _RelaxScreenState extends State<RelaxScreen> with SingleTickerProviderStat
           borderRadius: BorderRadius.circular(60),
           side: const BorderSide(color: Colors.white, width: 3),
         ),
-        child: const Icon(Icons.emergency, color: Colors.white, size: 35),
+        child: const Icon(Icons.emergency, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -430,7 +424,6 @@ class _MeditationScreenState extends State<MeditationScreen> {
             stretch: true,
             flexibleSpace: LayoutBuilder(
               builder: (context, constraints) {
-                final double top = constraints.biggest.height;
                 final bool showTitle = _scrollOffset > appBarHeight - kToolbarHeight - 15;
 
                 return FlexibleSpaceBar(
@@ -477,17 +470,20 @@ class _MeditationScreenState extends State<MeditationScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                CircleAvatar(
-                                  radius: 34,
-                                  backgroundImage: widget.profileImage != null
-                                      ? FileImage(widget.profileImage!)
-                                      : (widget.photoUrl != null
-                                      ? NetworkImage(widget.photoUrl!)
-                                      : null) as ImageProvider?,
-                                  backgroundColor: Colors.white,
-                                  child: (widget.profileImage == null && widget.photoUrl == null)
-                                      ? Icon(Icons.person, size: 30, color: Color(0xFF1A2C50))
-                                      : null,
+                                GestureDetector(
+                                  onTap: widget.pickImage,
+                                  child: CircleAvatar(
+                                    radius: 34,
+                                    backgroundImage: widget.profileImage != null
+                                        ? FileImage(widget.profileImage!)
+                                        : (widget.photoUrl != null
+                                        ? NetworkImage(widget.photoUrl!)
+                                        : null) as ImageProvider?,
+                                    backgroundColor: Colors.white,
+                                    child: (widget.profileImage == null && widget.photoUrl == null)
+                                        ? Icon(Icons.person, size: 30, color: Color(0xFF1A2C50))
+                                        : null,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Column(
@@ -552,14 +548,11 @@ class _MeditationScreenState extends State<MeditationScreen> {
       var item = _allItems[i];
 
       if (item['type'] == 'header') {
-        // If we have accumulated items, add them to sections
         if (currentHeader != null && currentItems.isNotEmpty) {
           sections.add(_buildSectionTitle(currentHeader));
           sections.add(const SizedBox(height: 16));
           sections.add(_buildGridItems(currentItems));
           sections.add(const SizedBox(height: 30));
-
-          // Reset for next section
           currentItems = [];
         }
         currentHeader = item['title'];
@@ -568,7 +561,6 @@ class _MeditationScreenState extends State<MeditationScreen> {
       }
     }
 
-    // Add any remaining items
     if (currentHeader != null && currentItems.isNotEmpty) {
       sections.add(_buildSectionTitle(currentHeader));
       sections.add(const SizedBox(height: 16));
@@ -596,7 +588,7 @@ class _MeditationScreenState extends State<MeditationScreen> {
         } else if (item['type'] == 'wisdom') {
           return _WisdomCard(item: item['item']);
         }
-        return Container(); // Fallback
+        return Container();
       },
     );
   }
@@ -657,21 +649,15 @@ class _WisdomCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Background image
             Positioned.fill(
               child: Image.asset(
                 item.imagePath,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  // Fallback if image is missing
-                  return Container(
-                    color: item.gradientColors[0],
-                  );
+                  return Container(color: item.gradientColors[0]);
                 },
               ),
             ),
-
-            // Gradient overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -684,8 +670,6 @@ class _WisdomCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Content
             Padding(
               padding: const EdgeInsets.all(14.0),
               child: Column(
@@ -761,15 +745,12 @@ class _BreathingCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Background image with scale effect
               Positioned.fill(
                 child: Image.asset(
                   item.imagePaths[0],
                   fit: BoxFit.cover,
                 ),
               ),
-
-              // Gradient overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -784,8 +765,6 @@ class _BreathingCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-
-              // Content
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

@@ -1,8 +1,8 @@
 // complete_breathing_page.dart
 import 'package:flutter/material.dart';
 
-class CompleteBreathingPage extends StatelessWidget {
-  const CompleteBreathingPage({Key? key}) : super(key: key);
+class CompleteBreathingLearnMorePage extends StatelessWidget {
+  const CompleteBreathingLearnMorePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

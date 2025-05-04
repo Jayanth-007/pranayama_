@@ -22,6 +22,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   final int totalDurationSeconds = 300; // 5 minutes in seconds
   late int rounds;
   bool _isCalmAudioPlaying = false;
+  bool _showSkipButton = true;
 
   // Breathing durations (4:6 ratio)
   final int inhaleDuration = 4;
@@ -64,6 +65,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     try {
       setState(() {
         _isCalmAudioPlaying = true;
+        _showSkipButton = true;
         breathingText = "Stay calm and follow the meditation...";
       });
 
@@ -76,6 +78,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         if (mounted) {
           setState(() {
             _isCalmAudioPlaying = false;
+            _showSkipButton = false;
             breathingText = "Inhale";
             _currentPhase = "inhale";
           });
@@ -88,11 +91,27 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
       if (mounted) {
         setState(() {
           _isCalmAudioPlaying = false;
+          _showSkipButton = false;
           breathingText = "Inhale";
           _currentPhase = "inhale";
         });
         _startBreathingCycle();
       }
+    }
+  }
+
+  Future<void> _skipIntro() async {
+    if (_isCalmAudioPlaying) {
+      await _instructionPlayer.stop();
+      if (mounted) {
+        setState(() {
+          _isCalmAudioPlaying = false;
+          _showSkipButton = false;
+          breathingText = "Inhale";
+          _currentPhase = "inhale";
+        });
+      }
+      _startBreathingCycle();
     }
   }
 
@@ -140,10 +159,16 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     if (status == AnimationStatus.completed) {
       _currentRound++;
       if (_currentRound < rounds) {
+        // Reset to inhale for next round
+        setState(() {
+          _currentPhase = "inhale";
+          breathingText = "Inhale";
+        });
         _controller.reset();
         await Future.delayed(const Duration(milliseconds: 2));
         if (isRunning && mounted) {
-          _startBreathingCycle();
+          _controller.forward();
+          _playPhaseSound(_currentPhase);
         }
       } else {
         if (mounted) {
@@ -185,39 +210,61 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
     _playPhaseSound(_currentPhase);
   }
 
-  Future<void> _stopSession() async {
-    if (isRunning || _isCalmAudioPlaying) {
+  Future<void> _toggleSession() async {
+    if (isRunning) {
+      // Pause the session
       _controller.stop();
       await _stopAllAudio();
-
-      bool? shouldExit = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Session Interrupted'),
-            content: const Text('Would you like to exit or restart?'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Restart'),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                  _restartSession();
-                },
-              ),
-              TextButton(
-                child: const Text('Exit', style: TextStyle(color: Colors.red)),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (shouldExit == true && mounted) {
-        Navigator.of(context).pop();
-      }
+      setState(() {
+        isRunning = false;
+        breathingText = "Paused";
+      });
+    } else if (_isCalmAudioPlaying) {
+      // Skip the intro
+      await _skipIntro();
     } else {
-      _restartSession();
+      // Resume the session - always start from inhale
+      if (_currentRound >= rounds) {
+        // If session was complete, restart it
+        _restartSession();
+      } else {
+        // Reset to inhale phase when resuming
+        setState(() {
+          isRunning = true;
+          _currentPhase = "inhale";
+          breathingText = "Inhale";
+        });
+        _controller.reset();
+        _controller.forward();
+        _playPhaseSound(_currentPhase);
+      }
+    }
+  }
+
+  Future<void> _exitSession() async {
+    bool? shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Exit Session?'),
+          content: const Text('Are you sure you want to exit the breathing session?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Exit', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldExit == true && mounted) {
+      await _stopAllAudio();
+      Navigator.of(context).pop();
     }
   }
 
@@ -234,11 +281,15 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   }
 
   Future<void> _stopAllAudio() async {
-    await Future.wait([
-      _instructionPlayer.stop(),
-      _inhalePlayer.stop(),
-      _exhalePlayer.stop(),
-    ]);
+    try {
+      await Future.wait([
+        _instructionPlayer.stop(),
+        _inhalePlayer.stop(),
+        _exhalePlayer.stop(),
+      ]);
+    } catch (e) {
+      debugPrint('Error stopping audio: $e');
+    }
   }
 
   Widget _buildTextDisplay(String text) {
@@ -308,8 +359,25 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
   }
 
   Widget _buildControlButton() {
+    IconData icon;
+    String label;
+
+    if (isRunning) {
+      icon = Icons.pause;
+      label = "Pause";
+    } else if (_isCalmAudioPlaying) {
+      icon = Icons.skip_next;
+      label = "Skip";
+    } else if (_currentRound >= rounds) {
+      icon = Icons.replay;
+      label = "Restart";
+    } else {
+      icon = Icons.play_arrow;
+      label = "Resume";
+    }
+
     return ElevatedButton.icon(
-      onPressed: _stopSession,
+      onPressed: _toggleSession,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blueGrey[700],
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
@@ -318,13 +386,24 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         ),
         elevation: 10,
       ),
-      icon: Icon(
-        isRunning || _isCalmAudioPlaying ? Icons.stop : Icons.play_arrow,
-        color: Colors.white,
-      ),
+      icon: Icon(icon, color: Colors.white),
       label: Text(
-        isRunning || _isCalmAudioPlaying ? "Stop" : "Restart",
+        label,
         style: const TextStyle(fontSize: 20, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return TextButton(
+      onPressed: _skipIntro,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white70,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      ),
+      child: const Text(
+        "",
+        style: TextStyle(fontSize: 16),
       ),
     );
   }
@@ -400,6 +479,12 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
         backgroundColor: Colors.blueGrey[800],
         elevation: 0,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: _exitSession,
+          ),
+        ],
       ),
       body: Container(
         color: const Color(0xFF131313),
@@ -412,6 +497,7 @@ class _PanicBreathingPageState extends State<PanicBreathingPage>
               _buildBreathingImage(),
               const SizedBox(height: 30),
               _buildControlButton(),
+              if (_showSkipButton) _buildSkipButton(),
               const SizedBox(height: 20),
               if (!_isCalmAudioPlaying) _buildTimeProgressBar(),
             ],

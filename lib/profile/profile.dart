@@ -7,9 +7,6 @@ import 'package:meditation_app/greeting/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'contributers.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 
 
 void main() {
@@ -107,99 +104,160 @@ class _MeditationProfileState extends State<MeditationProfile> {
             SizedBox(height: 20.0),
             Divider(color: const Color(0xff457B9D).withOpacity(0.3)),
             SizedBox(height: 20.0),
-            _buildIconCard(
-              icon: Icons.favorite,
-              title: 'View Favorite Courses',
+            Text(
+              'Favorites',
+              style: TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xff457B9D), // Pastel dark blue
+              ),
+            ),
+            GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => FavoritesPage()),
                 );
               },
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                margin: EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.asset(
+                        'assets/images/fav.jpg', // <-- Replace with your image if needed
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.favorite, color: const Color(0xffE63946)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'View Favorite Courses',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xff457B9D),
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xff457B9D)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+
             SizedBox(height: 20.0),
             Divider(color: const Color(0xff457B9D).withOpacity(0.3)),
             SizedBox(height: 20.0),
-            _buildIconCard(
-              icon: Icons.info_outline,
-              title: 'About Us',
+            GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AboutUsPage()),
                 );
               },
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                margin: EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.asset(
+                        'assets/images/aboutus.jpg', // <-- Replace with your image if needed
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: const Color(0xff457B9D)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'About Us',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xff457B9D),
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xff457B9D)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: 16.0),
-            _buildIconCard(
-              icon: Icons.people_outline,
-              title: 'Contributors',
+            GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ContributorsPage()),
                 );
               },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xffA8DADC).withOpacity(0.8),
-              const Color(0xffA8DADC).withOpacity(0.4),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.7),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: const Color(0xff457B9D), size: 28),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xff457B9D),
-                  ),
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                margin: EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.asset(
+                        'assets/images/contri.jpg', // <-- Replace with your image if needed
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: const Color(0xff457B9D)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Contributers',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xff457B9D),
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xff457B9D)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xff457B9D)),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -474,21 +532,13 @@ class AboutUsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/yoga_logo.png', // Add a circular logo image
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(Icons.spa, size: 60, color: primaryBlue),
-                          Icon(Icons.waterfall_chart, size: 80, color: primaryBlue.withOpacity(0.3)),
-                        ],
-                      ),
-                    );
-                  },
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(Icons.spa, size: 60, color: primaryBlue),
+                    Icon(Icons.waterfall_chart, size: 80, color: primaryBlue.withOpacity(0.3)),
+                  ],
                 ),
               ),
             ),
@@ -521,27 +571,13 @@ class AboutUsPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: lightBlue, width: 1),
             ),
-            child: Column(
-              children: [
-                Text(
-                  'A registered charitable trust dedicated to promoting yoga as a holistic path to physical, mental, and spiritual well-being.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: primaryBlue,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 16),
-                Image.asset(
-                  'assets/images/yoga_group.jpg', // Add an image showing a yoga class or community
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return SizedBox(height: 0);
-                  },
-                ),
-              ],
+            child: Text(
+              'A registered charitable trust dedicated to promoting yoga as a holistic path to physical, mental, and spiritual well-being.',
+              style: TextStyle(
+                fontSize: 16,
+                color: primaryBlue,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -585,53 +621,12 @@ class AboutUsPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Established in 1989 by Yogaratna Dr. S N Omkar, Yoga Mandir has been a beacon of authentic yoga practice and teaching in Bengaluru for over three decades.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: primaryBlue.withOpacity(0.8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        'assets/images/yoga_history.jpg', // Add an historical image
-                        height: 100,
-                        width: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 100,
-                            width: 100,
-                            color: lightBlue.withOpacity(0.3),
-                            child: Icon(Icons.history, color: primaryBlue),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Image.asset(
-                  'assets/images/yoga_center.jpg', // Add an image of the center
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 120,
-                      color: lightBlue.withOpacity(0.2),
-                      child: Center(
-                        child: Icon(Icons.image_not_supported, color: primaryBlue),
-                      ),
-                    );
-                  },
+                Text(
+                  'Established in 1989 by Yogaratna Dr. S N Omkar, Yoga Mandir has been a beacon of authentic yoga practice and teaching in Bengaluru for over three decades.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: primaryBlue.withOpacity(0.8),
+                  ),
                 ),
                 SizedBox(height: 12),
                 Text(
@@ -704,28 +699,6 @@ class AboutUsPage extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16),
-          Image.asset(
-            title == 'SURYA Program'
-                ? 'assets/images/yoga_students.jpg' // Image of students practicing yoga
-                : 'assets/images/yoga_app.jpg', // Image of app or digital yoga
-            height: 180,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 120,
-                color: lightBlue.withOpacity(0.2),
-                child: Center(
-                  child: Icon(
-                    title == 'SURYA Program' ? Icons.groups : Icons.devices,
-                    color: primaryBlue,
-                    size: 40,
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 16),
           if (title == 'SURYA Program')
             Text(
               'Our flagship program nurtures young minds through Patanjali-inspired teachings, promoting holistic development and well-being among students.',
@@ -787,25 +760,6 @@ class AboutUsPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/yoga_lotus.jpg', // Add an image of lotus flower
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 100,
-                        color: lightBlue.withOpacity(0.2),
-                        child: Center(
-                          child: Icon(Icons.spa, color: primaryBlue, size: 40),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 16),
                 Text(
                   '"Like a lotus leaf remains untouched by water, one should act without attachment."',
                   style: TextStyle(
@@ -853,12 +807,6 @@ class AboutUsPage extends StatelessWidget {
   }
 
   Widget _buildCoreValueItem(BuildContext context, String title, IconData icon, Color primaryBlue, Color backgroundColor) {
-    String imagePath = title == 'Focus'
-        ? 'assets/images/yoga_focus.jpg'
-        : title == 'Devotion'
-        ? 'assets/images/yoga_devotion.jpg'
-        : 'assets/images/yoga_compassion.jpg';
-
     return InkWell(
       onTap: () {
         // Show a tooltip or description when tapped
@@ -876,21 +824,12 @@ class AboutUsPage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            height: 60,
-            width: 60,
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: backgroundColor.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
-            child: ClipOval(
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(icon, color: primaryBlue, size: 24);
-                },
-              ),
-            ),
+            child: Icon(icon, color: primaryBlue, size: 24),
           ),
           SizedBox(height: 8),
           Text(
@@ -924,21 +863,9 @@ class AboutUsPage extends StatelessWidget {
       child: Column(
         children: [
           CircleAvatar(
-            radius: 60,
+            radius: 50,
             backgroundColor: lightBlue,
-            backgroundImage: AssetImage('assets/images/founder.jpg'),
-            onBackgroundImageError: (exception, stackTrace) {
-              // Placeholder if image fails to load
-            },
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/founder.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(Icons.person, size: 60, color: primaryBlue);
-                },
-              ),
-            ),
+            child: Icon(Icons.person, size: 60, color: primaryBlue),
           ),
           SizedBox(height: 16),
           Text(
@@ -956,19 +883,6 @@ class AboutUsPage extends StatelessWidget {
               fontSize: 16,
               fontStyle: FontStyle.italic,
               color: primaryBlue.withOpacity(0.7),
-            ),
-          ),
-          SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              'assets/images/founder_teaching.jpg', // Image of founder teaching
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return SizedBox();
-              },
             ),
           ),
           SizedBox(height: 16),
@@ -1016,40 +930,11 @@ class AboutUsPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/yoga_building.jpg', // Image of the yoga center building
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 100,
-                        color: lightBlue.withOpacity(0.2),
-                        child: Center(
-                          child: Icon(Icons.location_on, color: primaryBlue, size: 40),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 16),
                 _buildContactItem(Icons.location_on, 'Yoga Mandir, Bengaluru', primaryBlue),
                 Divider(color: lightBlue.withOpacity(0.5)),
                 _buildContactItem(Icons.email, 'info@yogamandir.org', primaryBlue),
                 Divider(color: lightBlue.withOpacity(0.5)),
                 _buildContactItem(Icons.phone, '+91 9876543210', primaryBlue),
-                SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildSocialMediaIcon(context, Icons.facebook, primaryBlue),
-                    _buildSocialMediaIcon(context, Icons.camera_alt, primaryBlue),
-                    _buildSocialMediaIcon(context, Icons.telegram, primaryBlue),
-                    _buildSocialMediaIcon(context, Icons.whatshot, primaryBlue),
-                  ],
-                ),
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () async {
@@ -1098,25 +983,6 @@ class AboutUsPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSocialMediaIcon(BuildContext context, IconData icon, Color primaryBlue) {
-    return InkWell(
-      onTap: () {
-        // Handle social media tap
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Follow us on social media!'))
-        );
-      },
-      child: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: primaryBlue.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: primaryBlue, size: 20),
       ),
     );
   }
